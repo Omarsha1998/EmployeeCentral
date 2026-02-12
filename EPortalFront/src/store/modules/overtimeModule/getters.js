@@ -1,0 +1,15 @@
+export default {
+  getOvertimeDetails: (state) => state.overtimeDetails,
+  getPendingOvertime: (state) => state.pendingOvertime,
+  getPendingCancelOvertime: (state) => state.pendingCancelOvertime,
+  getUserApprovedOvertime: (state) => state.userApprovedOvertime,
+  getUserRejectedOvertime: (state) => state.userRejectedOvertime,
+  getApprovedOvertime: (state) => state.approvedOvertime,
+  getRejectedOvertime: (state) => state.rejectedOvertime,
+  getPendingHrd: (state) => state.pendingHrd,
+  getUserApprovedCancel: (state) => state.userApprovedCancel,
+  getUserRejectedCancel: (state) => state.userRejectedCancel,
+  getRejectedCancel: (state) => state.rejectedCancel,
+  getApprovedCancel: (state) => state.approvedCancel,
+  getPendingAccomplishment: (state) => state.pendingAccomplishment,
+};

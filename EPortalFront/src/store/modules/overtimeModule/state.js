@@ -1,0 +1,15 @@
+export default {
+  overtimeDetails: null,
+  pendingOvertime: null,
+  pendingCancelOvertime: null,
+  userApprovedOvertime: null,
+  userRejectedOvertime: null,
+  approvedOvertime: null,
+  rejectedOvertime: null,
+  pendingHrd: null,
+  userApprovedCancel: null,
+  userRejectedCancel: null,
+  rejectedCancel: null,
+  approvedCancel: null,
+  pendingAccomplishment: null,
+};

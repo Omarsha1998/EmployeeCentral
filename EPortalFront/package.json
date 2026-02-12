@@ -1,0 +1,45 @@
+{
+  "name": "personnel-information-system",
+  "version": "2.0",
+  "description": "This is my first project",
+  "productName": "UERM Employee Portal",
+  "author": "Joshua C. Magoliman, Omar Shaid",
+  "private": true,
+  "scripts": {
+    "test": "echo \"No test specified\" && exit 0",
+    "dev": "quasar dev",
+    "build": "quasar build",
+    "icons": "icongenie generate -i app-logo.png --skip-trim"
+  },
+  "dependencies": {
+    "@quasar/app": "^3.3.3",
+    "@quasar/extras": "^1.16.9",
+    "@tensorflow-models/body-pix": "^2.2.1",
+    "@tensorflow/tfjs": "^4.22.0",
+    "axios": "^1.3.5",
+    "exceljs": "^4.4.0",
+    "html-to-pdfmake": "^2.5.31",
+    "jsonwebtoken": "^9.0.2",
+    "pdf2img": "^0.5.0",
+    "pdfjs-dist": "^3.11.174",
+    "pdfmake": "^0.2.20",
+    "quasar": "^2.14.2",
+    "vue": "^3.2.47",
+    "vue-pdf": "^4.3.0",
+    "vue-router": "^4.1.6",
+    "vuex": "^4.0.2"
+  },
+  "devDependencies": {
+    "@quasar/app-vite": "^1.0.0",
+    "@quasar/quasar-app-extension-qpdfviewer": "^2.0.0-alpha.6",
+    "autoprefixer": "^10.4.2",
+    "electron": "^25.0.1",
+    "electron-packager": "^15.5.2",
+    "postcss": "^8.4.14"
+  },
+  "engines": {
+    "node": "^18 || ^16 || ^14.19",
+    "npm": ">= 6.13.4",
+    "yarn": ">= 1.21.1"
+  }
+}
