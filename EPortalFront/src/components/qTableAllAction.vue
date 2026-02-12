@@ -345,8 +345,8 @@ export default {
                 ? "these overtimes?"
                 : "these leaves?"
               : this.overtimeModule
-              ? "this overtime?"
-              : "this leave?"
+                ? "this overtime?"
+                : "this leave?"
           }`,
 
           cancel: true,

@@ -28,11 +28,17 @@ export default {
       data.access_rights?.dutyRosterView || false;
     state.access_rights.employeeLeaveDetailsAccess =
       data.access_rights?.employeeLeaveDetails || false;
+    state.access_rights.employeeDtrDetailsAccess =
+      data.access_rights?.employeeDtrDetails || false;
     state.access_rights.approverDetails =
       data.access_rights?.approverDetails || false;
     state.access_rights.eventAccess = data.access_rights?.eventAccess || false;
     state.access_rights.unpaidOvertime =
       data.access_rights?.unpaidOvertime || false;
+    state.access_rights.dtrFinalization =
+      data.access_rights?.dtrFinalization || false;
+
+    state.policyRule = data.policyRule || false;
   },
 
   SET_DEFAULT_VALUES(state) {
@@ -56,8 +62,12 @@ export default {
       dutyRosterCreate: false,
       dutyRosterView: false,
       employeeLeaveDetailsAccess: false,
+      employeeDtrDetailsAccess: false,
       eventAccess: false,
       unpaidOvertimeReport: false,
+      dtrFinalization: false,
     };
+
+    state.policyRule = false;
   },
 };

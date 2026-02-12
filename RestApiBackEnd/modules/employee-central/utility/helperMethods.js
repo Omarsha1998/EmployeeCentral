@@ -5,6 +5,7 @@ const fsExtra = require("fs-extra");
 const sqlHelper = require("../../../helpers/sql.js");
 const mssql = require("mssql");
 const { SQLDataTypes } = require("../utility/enums.js");
+const util = require("../../../helpers/util.js");
 
 function removeTime(dateTime) {
   // FORMAT = 2023-05-05T00:00:00.000Z
@@ -140,23 +141,21 @@ function isValidNumber(stringValue) {
 }
 
 function checkRowsAffected(response) {
-  if (response.rowsAffected.length === 1){
+  if (response.rowsAffected.length === 1) {
     if (response.rowsAffected[0] === 0) throw "No rows affected";
-     return;
+    return;
   }
 
-let areAllZeros = true;
+  let areAllZeros = true;
 
-for (let interval = 0; interval < response.rowsAffected.length; interval++)
-{
-   if (interval > 0) 
-    {
+  for (let interval = 0; interval < response.rowsAffected.length; interval++) {
+    if (interval > 0) {
       areAllZeros = false;
       break;
     }
-}
+  }
 
-if (areAllZeros) throw "No rows affected";
+  if (areAllZeros) throw "No rows affected";
 }
 
 function getErrorMessage(methodName, errorMessage, errorStackTrace) {
@@ -201,14 +200,14 @@ function trimValue(value) {
 }
 
 function convertToBoolean(value) {
-  return (value === 1);
+  return value === 1;
 }
 
-function toNumber(value){
-return Number(value);
+function toNumber(value) {
+  return Number(value);
 }
 
-function isNullOrUndefinedOrEmpty(value){
+function isNullOrUndefinedOrEmpty(value) {
   if (value === null || value === undefined || value === "") return true;
   else return false;
 }
@@ -247,14 +246,6 @@ function handleUploadsError(error, res, bodyContent, methodName) {
       .json(getErrorMessage(methodName, error.message, error.stack));
 }
 
-const scheduleDailyTask = function (hour, minute, task) {
-  const initialDelay = calculateMillisecondsUntil(hour, minute);
-  setTimeout(function () {
-    task();
-    setInterval(task, 24 * 60 * 60 * 1000);
-  }, initialDelay);
-};
-
 const calculateMillisecondsUntil = function (hour, minute) {
   const now = new Date();
   const targetTime = new Date(
@@ -271,6 +262,14 @@ const calculateMillisecondsUntil = function (hour, minute) {
     delay += 24 * 60 * 60 * 1000; // 24 hours in milliseconds
   }
   return delay;
+};
+
+const scheduleDailyTask = function (hour, minute, task) {
+  const initialDelay = calculateMillisecondsUntil(hour, minute);
+  setTimeout(function () {
+    task();
+    setInterval(task, 24 * 60 * 60 * 1000);
+  }, initialDelay);
 };
 
 function numberToWords(number) {
@@ -327,6 +326,92 @@ function numberToWords(number) {
   }
 }
 
+async function sendEmailForLeave(data, notificationType) {
+  const recipient = "jmignacio@uerm.edu.ph";
+  // const recipient = "ohshaid@uerm.edu.ph";
+
+  try {
+    const currentDate = new Date();
+    const formattedDate = currentDate.toLocaleString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+
+    const portalLink =
+      "https://local.uerm.edu.ph/employee-central/#/account/login";
+
+    // Determine email content based on notification type
+    const isRejected = notificationType === "rejected";
+    const isFiled = notificationType === "approveLwopFA";
+
+    const emailContent = {
+      header: isRejected
+        ? `LEAVE REQUEST REJECTED<br/>`
+        : `LEAVE REQUEST FILED<br/>`,
+      subject: isRejected
+        ? `Leave Request Rejected - ${data.employeeName} (${data.employeeCode}) - ${formattedDate}`
+        : `Leave Request Filed - ${data.employeeName} (${data.employeeCode}) - ${formattedDate}`,
+      content: `Good day,<br/><br/>`,
+      email: recipient,
+
+      name: data.employeeName,
+    };
+
+    // Main notification message
+    emailContent.content += isRejected
+      ? `This is to inform you that a leave request has been rejected.<br/><br/>`
+      : `This is to inform you that a leave request (Leave Without Pay - Faculty Employee Class) has been filed.<br/><br/>`;
+
+    // Employee Information Section
+    emailContent.content += `<strong>Employee Details:</strong><br/>`;
+    emailContent.content += `Name: ${data.employeeName}<br/>`;
+    emailContent.content += `Employee Code: ${data.employeeCode}<br/>`;
+    emailContent.content += `Position: ${data.employeePositioN}<br/>`;
+    emailContent.content += `Department: ${data.employeeDepartment}<br/>`;
+    emailContent.content += `Employee Class: ${data.employeeClassCode}<br/><br/>`;
+    // Leave Information Section
+    emailContent.content += `<strong>Leave Information:</strong><br/>`;
+    emailContent.content += `Leave Type: ${data.leaveType}<br/>`;
+    emailContent.content += `Date of Leave: ${data.formattedDateOfLeave}<br/>`;
+    emailContent.content += `Time of Leave: ${data.formattedTimeOfLeave}<br/>`;
+
+    // Add reason based on notification type
+    if (isRejected && data.rejectedReason) {
+      emailContent.content += `<br/>`;
+    } else if (isFiled && data.reasonForLeave) {
+      emailContent.content += `Reason for Leave: ${data.reasonForLeave}<br/>`;
+    }
+    emailContent.content += `<br/>`;
+
+    // Rejection Information Section (only for rejected leaves)
+    if (isRejected) {
+      emailContent.content += `<strong>Rejected By:</strong><br/>`;
+      emailContent.content += `Name: ${data.rejectedByName}<br/>`;
+      emailContent.content += `Employee Code: ${data.rejectedByCode}<br/>`;
+      emailContent.content += `Position: ${data.rejectedByPosition}<br/>`;
+      emailContent.content += `Department: ${data.rejectedByDepartment}<br/>`;
+      emailContent.content += `Employee Class: ${data.rejectedByEmpClassCode}<br/>`;
+      emailContent.content += `Date & Time of Rejection: ${data.formattedRejectedDateTime}<br/>`;
+
+      if (data.rejectedReason) {
+        emailContent.content += `Reason for Rejection: ${data.rejectedReason}<br/>`;
+      }
+      emailContent.content += `<br/>`;
+    }
+
+    // Portal link
+    emailContent.content += `For more details, please <a href="${portalLink}">click here</a> to log on to your <strong>UERM EMPLOYEE CENTRAL</strong> and navigate to <strong>Leave Management</strong>.<br/><br/>`;
+
+    // Closing
+    emailContent.content += `Thank you.`;
+
+    await util.sendEmail(emailContent);
+  } catch (error) {
+    console.error("Error in sendEmailForLeave:", error);
+  }
+}
 module.exports = {
   toNumber,
   decodeAccessToken,
@@ -356,4 +441,5 @@ module.exports = {
   getUploadedFolderPath,
   scheduleDailyTask,
   numberToWords,
+  sendEmailForLeave,
 };

@@ -18,6 +18,7 @@
               v-else
               :pendingDetails="pendingLeaveDetails"
               :pendingColumns="pendingColumns"
+              :LeaveTypeLabels="LeaveTypeLabels"
               :userApproved="userApprovedCancel"
               :userRejected="userRejectedCancel"
               :approvedDetails="approvedCancel"
@@ -26,7 +27,6 @@
               :cancelOperationModule="true"
               :pendingOperationModule="false"
               :overtimeModule="false"
-              :LeaveTypeLabels="LeaveTypeLabels"
               @successApproved="successAction()"
             />
           </div>
@@ -201,9 +201,9 @@ export default {
 
     async getPendingCancel() {
       try {
-        await helperMethods.delay(500);
         await this.$store.dispatch("leaveModule/getPendingCancel");
         this.pendingLeaveDetails = this.cancelPending;
+
         if (this.pendingLeaveDetails && this.pendingLeaveDetails.length > 0) {
           this.processDepartmentFilter(this.pendingLeaveDetails);
         }
@@ -219,7 +219,6 @@ export default {
 
     async fetchUserCancelApprovedLeaves() {
       try {
-        await helperMethods.delay(500);
         await this.$store.dispatch("leaveModule/fetchUserCancelApprovedLeaves");
         this.userApprovedCancel = this.userAppCancel;
         this.loadingCounter++;
@@ -233,7 +232,6 @@ export default {
 
     async fetchUserCancelRejectedLeaves() {
       try {
-        await helperMethods.delay(500);
         await this.$store.dispatch("leaveModule/fetchUserCancelRejectedLeaves");
         this.userRejectedCancel = this.userRejectCancel;
         this.loadingCounter++;
@@ -261,7 +259,6 @@ export default {
 
     async fetchRejectedCancelledLeaves() {
       try {
-        await helperMethods.delay(500);
         await this.$store.dispatch("leaveModule/fetchRejectedCancelledLeaves");
         this.rejectedCancel = this.rejectCancel;
         this.loadingCounter++;
@@ -285,21 +282,22 @@ export default {
       }
     },
 
-    async successApplication() {
-      await this.fetchUserCancelApprovedLeaves();
-      await this.fetchUserCancelRejectedLeaves();
+    async successAction() {
+      await this.getPendingCancel();
       await this.fetchApprovedCancelledLeaves();
       await this.fetchRejectedCancelledLeaves();
-      await this.getPendingCancel();
+      await this.fetchUserCancelApprovedLeaves();
+      await this.fetchUserCancelRejectedLeaves();
+      await this.fetchLeaveTypes();
     },
   },
 
   created() {
     this.getPendingCancel();
-    this.fetchUserCancelApprovedLeaves();
-    this.fetchUserCancelRejectedLeaves();
     this.fetchApprovedCancelledLeaves();
     this.fetchRejectedCancelledLeaves();
+    this.fetchUserCancelApprovedLeaves();
+    this.fetchUserCancelRejectedLeaves();
     this.fetchLeaveTypes();
   },
 };

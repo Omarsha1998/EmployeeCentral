@@ -27,7 +27,6 @@ const calculateTotalLeaveValue = async (
     `,
     [employeeCode, leavetype],
   );
-
   // const leaveLedgerQuery = `
   //     SELECT
   //         l.LeaveType,
@@ -2930,6 +2929,25 @@ const insertAccessRight = async (item, txn, creationDateTimeField) => {
   );
 };
 
+const employeeSimpleDetails = async (employeeCode) => {
+  return await sqlHelper.query(
+    `SELECT
+      FULLNAME FullName,
+      CODE EmployeeCode,
+	    DEPT_CODE DeptCode,
+	    DEPT_DESC Department,
+	    POS_DESC Position,
+      EMP_CLASS_CODE employeeClassCode,
+      EMP_CLASS_DESC employeeClass
+    FROM 
+      [UE database]..vw_Employees
+    WHERE
+      CODE = ?
+    `,
+    [employeeCode],
+  );
+};
+
 module.exports = {
   calculateTotalLeaveValue,
   calculateTotalLeaveValueInEdit,
@@ -2989,4 +3007,5 @@ module.exports = {
   runSp,
   checkAccess,
   insertAccessRight,
+  employeeSimpleDetails,
 };

@@ -153,4 +153,22 @@ export default {
       throw error;
     }
   },
+
+  async checkOwnership({}, data) {
+    try {
+      const response = await axios.post(
+        `${api}${controllerName}/checkApproverOwnership`,
+        data,
+        {
+          headers: {
+            Authorization: `Bearer ${Cookies.get("token")}`,
+          },
+        },
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error checking ownership", error);
+      throw error;
+    }
+  },
 };

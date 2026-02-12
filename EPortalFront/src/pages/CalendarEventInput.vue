@@ -21,7 +21,7 @@
               />
               <q-tab
                 :class="$q.screen.gt.md ? 'col-6' : 'col-12'"
-                name="employeeInputEvent"
+                name="employeeInputtedEvents"
                 icon="date_range"
                 label="Events"
               />
@@ -36,10 +36,21 @@
                 />
               </q-tab-panel>
 
-              <q-tab-panel name="employeeInputEvent">
+              <q-tab-panel name="employeeInputtedEvents">
+                <q-input
+                  v-if="allEvents.length > 0"
+                  class="blue-outline q-mb-md"
+                  v-model="searchTextDetails"
+                  label="Search"
+                  label-color="primary"
+                  outlined
+                  clearable
+                  :class="[$q.screen.name + '-text2']"
+                  @clear="clearSearchText"
+                />
                 <q-table
                   class="custom-scroll"
-                  :rows="events"
+                  :rows="computedEvents"
                   :columns="eventsCol"
                   row-key="programTitle"
                   virtual-scroll
@@ -86,20 +97,30 @@
                             : 'normal',
                         }"
                       >
-                        <template v-if="col.name === 'Action'">
+                        <template
+                          v-if="
+                            col.name === 'Action' && props.row.owner === true
+                          "
+                        >
                           <q-btn
+                            :disable="!props.row.owner"
                             unelavated
                             color="positive"
                             label="Edit"
                             class="q-mr-xs text-bold"
-                            @click="openUpdateDialog(props.row)"
+                            @click="
+                              props.row.owner && openUpdateDialog(props.row)
+                            "
                           />
                           <q-btn
+                            :disable="!props.row.owner"
                             unelavated
                             label="Remove"
                             color="negative"
                             class="q-mr-xs text-bold"
-                            @click="removeSetSchedule(props.row)"
+                            @click="
+                              props.row.owner && removeSetSchedule(props.row)
+                            "
                           />
                         </template>
                         <template
@@ -290,21 +311,103 @@ export default {
         },
       ],
       updateDialog: false,
+      searchTextDetails: "",
     };
   },
 
   computed: {
     ...mapGetters({
       allEvents: "announcementModule/getEvents",
+      employeeCode: "user_module/employee_id",
     }),
+
+    computedEvents() {
+      let filtered = Array.isArray(this.allEvents) ? [...this.allEvents] : [];
+
+      if (this.searchTextDetails && this.searchTextDetails.trim()) {
+        const query = this.searchTextDetails.toLowerCase().trim();
+        filtered = filtered.filter((event) => {
+          const programTitle = (event.programTitle || "").toLowerCase();
+          const venue = (event.venue || "").toLowerCase();
+          const participants = (event.participants || "").toLowerCase();
+          const trainingProvider = (event.trainingProvider || "").toLowerCase();
+          const dateCombine = (event.dateCombine || "").toLowerCase();
+          const timeCombine = (event.timeCombine || "").toLowerCase();
+
+          return (
+            programTitle.includes(query) ||
+            venue.includes(query) ||
+            participants.includes(query) ||
+            trainingProvider.includes(query) ||
+            dateCombine.includes(query) ||
+            timeCombine.includes(query)
+          );
+        });
+      }
+
+      filtered.sort((a, b) => {
+        const dateA = this.extractStartDate(a.fromDate);
+        const dateB = this.extractStartDate(b.fromDate);
+
+        if (dateA > dateB) return -1;
+        if (dateA < dateB) return 1;
+
+        const timeA = this.parseTime(a.timeFrom);
+        const timeB = this.parseTime(b.timeFrom);
+
+        return timeA - timeB;
+      });
+
+      return filtered;
+    },
   },
 
   methods: {
+    clearSearchText() {
+      this.searchTextDetails = "";
+    },
+
+    extractStartDate(dateString) {
+      if (!dateString) return new Date(0);
+
+      // Handle MM/DD/YYYY format
+      if (typeof dateString === "string" && dateString.includes("/")) {
+        const [month, day, year] = dateString.split("/");
+        return new Date(year, month - 1, day);
+      }
+
+      // Handle ISO string
+      return new Date(dateString);
+    },
+
+    parseTime(timeString) {
+      if (!timeString) return 0;
+
+      // Extract time from "h:mm A" format or ISO string
+      let timeStr = timeString;
+      if (timeString.includes("T")) {
+        timeStr = this.extractTimeFromDate(timeString);
+      }
+
+      // Parse "h:mm AM/PM" format
+      const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (!match) return 0;
+
+      let hours = parseInt(match[1]);
+      const minutes = parseInt(match[2]);
+      const period = match[3].toUpperCase();
+
+      // Convert to 24-hour format
+      if (period === "PM" && hours !== 12) hours += 12;
+      if (period === "AM" && hours === 12) hours = 0;
+
+      return hours * 60 + minutes; // Return total minutes for easy comparison
+    },
+
     async getEvents() {
       try {
         helperMethods.delay(100);
         await this.$store.dispatch("announcementModule/getEvents");
-        this.events = Array.isArray(this.allEvents) ? this.allEvents : [];
       } catch (error) {
         console.error(error);
         this.events = [];

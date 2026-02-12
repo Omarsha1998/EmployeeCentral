@@ -231,6 +231,23 @@
                     </div>
                   </template>
 
+                  <template v-else-if="col.name === 'Remarks'">
+                    <div v-if="props.row.remarksTimeAdjustment">
+                      <q-btn
+                        push
+                        @click="remarksMethod(props.row.remarksTimeAdjustment)"
+                        icon="article"
+                        color="primary"
+                        dense
+                        size="md"
+                      >
+                        <q-tooltip>{{
+                          props.row.remarksTimeAdjustment
+                        }}</q-tooltip>
+                      </q-btn>
+                    </div>
+                    <div v-else class="text-grey-6">-</div>
+                  </template>
                   <renderCell v-else :row="props.row" :col="col" />
                 </q-td>
               </q-tr>
@@ -547,7 +564,7 @@
 
       <div class="col-12 q-mt-lg q-pb-xl text-center">
         <q-btn
-          v-if="items.length > displayedItems.length"
+          v-if="displayedItems.length > 1"
           class="text-white"
           label="Load More"
           color="primary"
@@ -714,6 +731,32 @@
       </q-card-section>
     </q-card>
   </q-dialog>
+
+  <q-dialog v-model="remarksTimeAdj">
+    <q-card style="max-width: 1100px; position: relative">
+      <q-card-section
+        class="bg-primary row items-center q-pa-sm text-h6"
+        style="min-width: 400px"
+      >
+        <div class="bg-primary text-white text-bold">
+          Time Adjustment Remarks(Reason)
+        </div>
+        <q-space></q-space>
+        <q-btn
+          class="bg-white"
+          icon="close"
+          push
+          round
+          dense
+          v-close-popup
+        ></q-btn>
+      </q-card-section>
+
+      <q-card-section class="q-pt-xm text-justify text-subtitle1">
+        {{ timeAdjustmentRemarks }}
+      </q-card-section>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script>
@@ -747,6 +790,8 @@ export default {
       manualTotals: {},
       selectedEmployeeTime: false,
       selectedEmployeeTimeData: {},
+      remarksTimeAdj: false,
+      timeAdjustmentRemarks: "",
     };
   },
 
@@ -1209,6 +1254,12 @@ export default {
           align: "center",
           field: "diffPM",
         },
+        {
+          name: "Remarks",
+          label: "Remark (TimeAdj)",
+          align: "center",
+          field: "remarksTimeAdjustment",
+        },
       ];
 
       if (this.typeReport === "tally") {
@@ -1254,32 +1305,70 @@ export default {
 
       if (Array.isArray(this.items)) {
         return this.items.filter((item) => {
-          const matchesEmployee =
-            item.employeeCode?.toString().includes(search) ||
-            item.employeeName?.toLowerCase().includes(search);
+          // Search in top-level fields
+          const matchesCode = item.code
+            ?.toString()
+            .toLowerCase()
+            .includes(search);
+          const matchesEmployeeCode = item.employeeCode
+            ?.toString()
+            .toLowerCase()
+            .includes(search);
+          const matchesEmployeeName = item.employeeName
+            ?.toLowerCase()
+            .includes(search);
 
-          const matchesCode = item.code?.toString().includes(search);
+          // Search inside dtr array
+          const matchesDtr = item.dtr?.some((dtrItem) => {
+            return (
+              dtrItem.code?.toString().toLowerCase().includes(search) ||
+              dtrItem.name?.toLowerCase().includes(search) ||
+              dtrItem.deptCode?.toString().toLowerCase().includes(search) ||
+              dtrItem.department?.toLowerCase().includes(search) ||
+              dtrItem.posCode?.toLowerCase().includes(search) ||
+              dtrItem.position?.toLowerCase().includes(search)
+            );
+          });
 
-          const matchesDtr = item.dtr?.some(
-            (r) =>
-              r.code?.toString().includes(search) ||
-              r.name?.toLowerCase().includes(search),
+          // Search inside overtime array (optional)
+          const matchesOvertime = item.overtime?.some((otItem) => {
+            return (
+              otItem.code?.toString().toLowerCase().includes(search) ||
+              otItem.name?.toLowerCase().includes(search)
+            );
+          });
+
+          return (
+            matchesCode ||
+            matchesEmployeeCode ||
+            matchesEmployeeName ||
+            matchesDtr ||
+            matchesOvertime
           );
-
-          return matchesEmployee || matchesCode || matchesDtr;
         });
       }
 
+      // For object-based items (your second case)
       return Object.keys(this.items).filter((code) => {
-        const dtr = this.items[code]?.dtr || [];
-        return (
-          code.toString().includes(search) ||
-          dtr.some(
-            (r) =>
-              r.code?.toString().includes(search) ||
-              r.name?.toLowerCase().includes(search),
-          )
-        );
+        const item = this.items[code];
+        const dtr = item?.dtr || [];
+
+        // Search in code
+        const matchesCode = code.toString().toLowerCase().includes(search);
+
+        // Search in dtr array
+        const matchesDtr = dtr.some((dtrItem) => {
+          return (
+            dtrItem.code?.toString().toLowerCase().includes(search) ||
+            dtrItem.name?.toLowerCase().includes(search) ||
+            dtrItem.deptCode?.toString().toLowerCase().includes(search) ||
+            dtrItem.department?.toLowerCase().includes(search) ||
+            dtrItem.posCode?.toLowerCase().includes(search) ||
+            dtrItem.position?.toLowerCase().includes(search)
+          );
+        });
+
+        return matchesCode || matchesDtr;
       });
     },
 
@@ -1963,10 +2052,10 @@ export default {
           try {
             helperMethods.disablePointerEvents();
             await helperMethods.delay(100);
-            // await this.$store.dispatch(
-            //   "DTRModule/saveTimeData",
-            //   this.selectedEmployeeTimeData,
-            // );
+            await this.$store.dispatch(
+              "DTRModule/saveTimeData",
+              this.selectedEmployeeTimeData,
+            );
             this.selectedEmployeeTime = false;
             this.$q.notify({
               color: "positive",
@@ -1999,6 +2088,11 @@ export default {
           }
         })
         .onDismiss(() => {});
+    },
+
+    remarksMethod(timeAdjustmentRemarks) {
+      this.remarksTimeAdj = true;
+      this.timeAdjustmentRemarks = timeAdjustmentRemarks;
     },
   },
 

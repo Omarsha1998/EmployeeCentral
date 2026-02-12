@@ -321,13 +321,51 @@ function calculateWorkHours(from, to) {
   return (diffMinutes / 60).toFixed(2);
 }
 
-const tryCatchAsync = async (promise) => {
+const tryCatchAsync = async (fn) => {
+  console.time("async-call");
   try {
-    const result = await promise;
-    return [null, result];
+    const res = await fn();
+    return [null, res];
   } catch (err) {
     return [err, null];
+  } finally {
+    console.timeEnd("async-call");
   }
+};
+
+const formatDtrData = (dtrArray) => {
+  if (!dtrArray || dtrArray.length === 0) return [];
+
+  return dtrArray.map((entry) => {
+    const transDate = new Date(entry.transDate);
+    const month = (transDate.getMonth() + 1).toString().padStart(2, "0");
+    const day = transDate.getDate().toString().padStart(2, "0");
+    const transDateFormat = `${transDate.getFullYear()}-${month}-${day}`;
+
+    const dayOfWeek = transDate.toLocaleDateString("en-US", {
+      weekday: "short",
+    });
+
+    const schedFrom = new Date(entry.schedFrom);
+    const schedTo = new Date(entry.schedTo);
+    const formattedSchedFrom = schedFrom.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const formattedSchedTo = schedTo.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const schedule = `${formattedSchedFrom} - ${formattedSchedTo}`;
+
+    const holidayPay = Number.isInteger(entry.holidayPay)
+      ? entry.holidayPay
+      : entry.holidayPay.toFixed(2);
+
+    return { ...entry, dayOfWeek, schedule, transDateFormat, holidayPay };
+  });
 };
 
 export default {
@@ -362,4 +400,5 @@ export default {
   calculateTimeTo,
   calculateWorkHours,
   tryCatchAsync,
+  formatDtrData,
 };

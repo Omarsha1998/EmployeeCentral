@@ -75,10 +75,17 @@ router.use(
   require("../modules/hospital-dashboard/routes/routes.js"),
 );
 router.use("/dragonpay", require("../modules/dragonpay/routes/route.js"));
+
 router.use(
   "/uerm-infirmary",
   require("../modules/uerm-infirmary/routes/route.js"),
 );
+
+router.use(
+  "/uerm-infirmary-v2",
+  require("../modules/uerm-infirmary-v2/routes/index.js"),
+);
+
 router.use("/events-hub", require("../modules/events-hub/routes/route.js"));
 router.use("/ediagnostics", require("../modules/ediagnostics/routes/route.js"));
 router.use(
@@ -91,7 +98,10 @@ router.use(
 // Room Management //
 router.use("/room-mgt", require("../modules/room-mgt/routes/routes.js"));
 
-// // Ancillary Results Project //
+// IRMS //
+router.use("/incident-report/", require("../modules/irup/routes/routes.js"));
+
+// Ancillary Results Project //
 // router.use(
 //   "/ancillary/users",
 //   require("../modules/ancillary-results/routes/userRoutes.js"),
@@ -120,7 +130,7 @@ router.use("/room-mgt", require("../modules/room-mgt/routes/routes.js"));
 //   "/ancillary/test-templates",
 //   require("../modules/ancillary-results/routes/testTemplateRoutes.js"),
 // );
-// // Ancillary Results Project //
+// Ancillary Results Project //
 
 router.use("/users", require("./users.js"));
 router.use("/employees", require("./employees.js"));

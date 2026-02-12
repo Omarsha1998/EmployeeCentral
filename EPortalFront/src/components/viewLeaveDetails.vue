@@ -158,7 +158,7 @@
             </div>
           </template>
           <template v-if="col.name === 'Time'">
-            {{ row.timeFrom }} - {{ formatTime(row.timeTo) }}
+            {{ formatTime(row.timeFrom) }} - {{ formatTime(row.timeTo) }}
           </template>
           <template v-if="col.name === 'Reason'">
             <!-- <q-btn
@@ -900,8 +900,8 @@
             cancel
               ? "Leave Cancel Reason"
               : rejection
-              ? "Leave Rejection Reason"
-              : "Leave Request Reason"
+                ? "Leave Rejection Reason"
+                : "Leave Request Reason"
           }}
         </div>
         <q-space></q-space>

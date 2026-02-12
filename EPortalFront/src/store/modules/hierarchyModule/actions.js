@@ -148,11 +148,13 @@ export default {
       throw error;
     }
   },
-  async getDepartments({ commit }) {
+
+  async getDepartments({ commit }, data) {
     try {
       const request = await axios.get(
         `${api}${controllerName}/getDepartments`,
         {
+          params: data,
           headers: { Authorization: `Bearer ${Cookies.get("token")}` },
         },
       );

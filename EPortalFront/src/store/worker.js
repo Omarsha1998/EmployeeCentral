@@ -444,7 +444,7 @@
 //   return blob;
 // };
 
-importScripts("/excel.js");
+importScripts("/employee-central/excel.js");
 
 self.onmessage = async (event) => {
   const { data, module, headers } = event.data;

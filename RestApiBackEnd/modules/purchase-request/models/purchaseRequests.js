@@ -214,7 +214,7 @@ const selectWarehouseDepartmentItems = async function (
         b.dateTimeUpdated
       from 
         UERMINV..PurchaseRequests a 
-        join UERMINV..PurchaseRequestItems b on b.prCode = a.code 
+        join UERMINV..PurchaseRequestItems b on b.prCode = a.code and b.status <> 0
         left join UERMMMC..Phar_items pit on pit.itemCode = b.itemCode collate SQL_Latin1_General_CP1_CI_AS
         and b.status <> 0 
         and b.active = 1 

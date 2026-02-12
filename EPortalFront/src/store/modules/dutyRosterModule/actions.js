@@ -6,22 +6,22 @@ const api = process.env.BACKEND_REST_API_URL;
 const controllerName = helperMethods.getControllerBase() + "dutyroster";
 
 export default {
-  async getDepartment({ commit }) {
-    try {
-      const response = await axios.get(
-        `${api}${controllerName}/getDepartment`,
-        {
-          headers: {
-            Authorization: `Bearer ${Cookies.get("token")}`,
-          },
-        },
-      );
-      commit("SET_DEPARTMENT", response.data);
-    } catch (error) {
-      console.error(error);
-      throw error;
-    }
-  },
+  // async getDepartment({ commit }) {
+  //   try {
+  //     const response = await axios.get(
+  //       `${api}${controllerName}/getDepartment`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${Cookies.get("token")}`,
+  //         },
+  //       },
+  //     );
+  //     commit("SET_DEPARTMENT", response.data);
+  //   } catch (error) {
+  //     console.error(error);
+  //     throw error;
+  //   }
+  // },
 
   async getEmployees({ commit }, data) {
     try {

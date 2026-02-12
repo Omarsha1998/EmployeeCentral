@@ -383,20 +383,17 @@ export default {
   },
 
   async unpaidOvertime({}, data) {
-    const [err, res] = await helperMethods.tryCatchAsync(
-      axios.get(`${api}${controllerName}/unpaidOvertime`, {
+    try {
+      const res = await axios.get(`${api}${controllerName}/unpaidOvertime`, {
         params: data,
         headers: {
           Authorization: `Bearer ${Cookies.get("token")}`,
         },
-      }),
-    );
+      });
 
-    if (err) {
-      console.error("Error in rejecting accomplishment:", err);
-      throw err;
+      return res.data;
+    } catch (error) {
+      console.error(error);
     }
-
-    return res.data;
   },
 };

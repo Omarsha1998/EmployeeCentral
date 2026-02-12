@@ -106,12 +106,13 @@ export default {
   },
 
   SET_CANCEL_PENDING(state, cancelPending) {
-    if (cancelPending) {
-      for (const leave of cancelPending) {
-        leave.tIME_FROM = new Date(leave.tIME_FROM);
-        leave.tIME_TO = new Date(leave.tIME_TO);
-      }
-    }
+    // if (cancelPending) {
+    //   for (const leave of cancelPending) {
+    //     leave.tIME_FROM = new Date(leave.tIME_FROM);
+    //     leave.tIME_TO = new Date(leave.tIME_TO);
+    //   }
+    // }
+
     state.cancelPending = cancelPending;
   },
 

@@ -39,8 +39,8 @@
                     $q.screen.gt.md
                       ? 'ADD APPROVER'
                       : $q.screen.width < 1013
-                      ? 'ADD APPROVER'
-                      : ''
+                        ? 'ADD APPROVER'
+                        : ''
                   "
                   icon="add"
                   @click="getAlLDepartment(null, (addApprover = true))"
@@ -50,8 +50,8 @@
           </div>
           <q-card
             class="bg-grey-1"
-            v-for="(doctor, index) in displayedApprovers"
-            :key="doctor.code"
+            v-for="(approver, index) in displayedApprovers"
+            :key="approver.code"
             :style="{ borderRadius: '10px', ...getCardStyle(index) }"
           >
             <div
@@ -68,16 +68,16 @@
                   class="text-bold text-center text-h6 q-pa-sm text-white bg-primary"
                   style="border-radius: 10px 10px 0 0"
                 >
-                  {{ doctor.approverName }}
+                  {{ approver.approverName }}
                 </div>
                 <div class="text-center text-subtitle1 q-pr-sm q-pl-sm">
-                  {{ doctor.approverPosition }}
+                  {{ approver.approverPosition }}
                 </div>
                 <div
                   class="q-pr-sm q-pl-sm"
                   style="display: flex; justify-content: center"
                 >
-                  <div>{{ doctor.approverDeptDescription }}</div>
+                  <div>{{ approver.approverDeptDescription }}</div>
                 </div>
                 <div
                   class="text-left text-subtitle2 text-bold q-pt-sm q-pr-sm q-pl-sm"
@@ -90,7 +90,7 @@
                 >
                   <div
                     class="row q-pb-sm"
-                    v-for="dept in doctor.departments"
+                    v-for="dept in approver.departments"
                     :key="dept.deptCode"
                   >
                     <q-btn
@@ -103,7 +103,7 @@
                           dept.deptDescription,
                           dept.deptCode,
                           dept.lvl,
-                          doctor.code,
+                          approver.code,
                         )
                       "
                     >
@@ -120,13 +120,15 @@
                   class="full-width bg-positive text-white"
                   label="Add"
                   icon="add"
-                  @click="getAlLDepartment(doctor.code, (addApprover = false))"
+                  @click="
+                    getAlLDepartment(approver.code, (addApprover = false))
+                  "
                 />
                 <q-btn
                   dense
                   class="full-width bg-negative text-white q-mt-xs"
                   label="Remove Approver"
-                  @click="removeApprover(doctor.code, doctor.departments)"
+                  @click="removeApprover(approver.code, approver.departments)"
                 />
               </div>
             </div>

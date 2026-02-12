@@ -28,7 +28,11 @@ export default {
   dutyRosterView: (state) => state.access_rights.dutyRosterView,
   employeeLeaveDetailsAccess: (state) =>
     state.access_rights.employeeLeaveDetailsAccess,
+  employeeDtrDetailsAccess: (state) =>
+    state.access_rights.employeeDtrDetailsAccess,
   approverDetailsAccess: (state) => state.access_rights.approverDetails,
   eventAccess: (state) => state.access_rights.eventAccess,
   unpaidOvertime: (state) => state.access_rights.unpaidOvertime,
+  dtrFinalization: (state) => state.access_rights.dtrFinalization,
+  policyRule: (state) => state.policyRule,
 };

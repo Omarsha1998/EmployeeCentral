@@ -121,6 +121,7 @@ const authenticate = async function (req, res) {
       const password = req.body.password === undefined ? "" : req.body.password;
       const type = req.body.type;
       const userToken = req.body.token === undefined ? "" : req.body.token; //webapp
+
       let userDetails = [];
       let conditions = "";
       let args = [];

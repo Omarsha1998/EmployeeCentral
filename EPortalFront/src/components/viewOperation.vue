@@ -30,8 +30,8 @@
                       ? "Pending Cancel Overtime"
                       : "Pending Overtime Details"
                     : cancelOperationModule
-                    ? "Pending Cancel Leave"
-                    : "Pending Leave Details"
+                      ? "Pending Cancel Leave"
+                      : "Pending Leave Details"
                 }}
               </div>
               <div class="col-4 text-right">
@@ -99,8 +99,8 @@
                     ? "Pending Cancel Overtime"
                     : "Pending Overtime Details"
                   : cancelOperationModule
-                  ? "Pending Cancel Leave"
-                  : "Pending Leave Details"
+                    ? "Pending Cancel Leave"
+                    : "Pending Leave Details"
               }}
             </q-card-section>
 
@@ -872,8 +872,8 @@ export default {
                 row.leaveType === "LWOP"
                   ? "-"
                   : row.remainingBalance != null
-                  ? parseFloat(row.remainingBalance.toFixed(2))
-                  : "-",
+                    ? parseFloat(row.remainingBalance.toFixed(2))
+                    : "-",
             };
           } else {
             return {
@@ -935,8 +935,8 @@ export default {
                 row.leaveType === "LWOP"
                   ? "-"
                   : row.remainingBalance != null
-                  ? parseFloat(row.remainingBalance.toFixed(2))
-                  : "-",
+                    ? parseFloat(row.remainingBalance.toFixed(2))
+                    : "-",
             };
           } else {
             return {

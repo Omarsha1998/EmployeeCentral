@@ -93,12 +93,12 @@ export default {
           link: "/EmployeeDtrRecord",
           icon: "perm_contact_calendar",
         },
-        {
-          title: "DTR Finalization",
-          caption: "Daily Time Record Finalization",
-          link: "/DTRFinalization",
-          icon: "difference",
-        },
+        // {
+        //   title: "DTR Finalization",
+        //   caption: "Daily Time Record Finalization",
+        //   link: "/DTRFinalization",
+        //   icon: "difference",
+        // },
       ],
     },
   ],
@@ -157,30 +157,30 @@ export default {
       caption: "Overtime Management",
       link: "",
       children: [
-        {
-          title: "My Overtime",
-          caption: "My Overtime",
-          link: "/MyOvertime",
-          icon: "more_time",
-        },
-        {
-          title: "Overtime Authorization",
-          caption: "Overtime Authorization",
-          link: "/OvertimeAuthorization",
-          icon: "alarm_on",
-        },
-        {
-          title: "Overtime Cancel Authorization",
-          caption: "Overtime Cancel Authorization",
-          link: "/OvertimeCancelAuthorization",
-          icon: "event_busy",
-        },
-        {
-          title: "Overtime HRD Review",
-          caption: "Overtime HRD Review",
-          link: "/OvertimeHrdReview",
-          icon: "work_history",
-        },
+        // {
+        //   title: "My Overtime",
+        //   caption: "My Overtime",
+        //   link: "/MyOvertime",
+        //   icon: "more_time",
+        // },
+        // {
+        //   title: "Overtime Authorization",
+        //   caption: "Overtime Authorization",
+        //   link: "/OvertimeAuthorization",
+        //   icon: "alarm_on",
+        // },
+        // {
+        //   title: "Overtime Cancel Authorization",
+        //   caption: "Overtime Cancel Authorization",
+        //   link: "/OvertimeCancelAuthorization",
+        //   icon: "event_busy",
+        // },
+        // {
+        //   title: "Overtime HRD Review",
+        //   caption: "Overtime HRD Review",
+        //   link: "/OvertimeHrdReview",
+        //   icon: "work_history",
+        // },
         {
           title: "Unpaid Overtime Report",
           caption: "Unpaid Overtime Report",

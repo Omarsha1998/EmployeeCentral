@@ -2,8 +2,6 @@
 // importScripts("/excel.js");
 
 const generateExcel = async (data) => {
-  console.log("Generating Excel with data:", data);
-
   try {
     const XLSX = self.XLSX;
 

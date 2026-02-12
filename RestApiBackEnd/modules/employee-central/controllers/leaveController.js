@@ -1,6 +1,7 @@
 const Leave = require("../models/leaveModel.js");
 const sqlHelper = require("../../../helpers/sql.js");
 const util = require("../../../helpers/util.js");
+const leaveUtil = require("../utility/helperMethods.js");
 
 const filterRequestDetailsCreate = (data = []) => {
   const hasMatchingIdCode = data.some((item) => {
@@ -521,6 +522,197 @@ const dateHelper = (data) => {
   });
 };
 
+// const processHrdRequest = async (data, hrdAccount, hrModule, oneLevel) => {
+//   const currentYear = new Date().getFullYear();
+//   const leaveIdDays = data.daysOfLeave;
+//   const leaveIdLeaveType = data.leaveType;
+//   const leaveIdCode = data.iDCode;
+//   const leaveIdYear = data.year || currentYear;
+
+//   let checkYearAttributed = [
+//     { year: `${leaveIdYear}`, daysOfLeave: leaveIdDays },
+//   ];
+
+//   if (leaveIdLeaveType !== "LWOP") {
+//     checkYearAttributed = await sqlHelper.transact(async (txn) => {
+//       return await Leave.getAttributedYear(
+//         leaveIdCode,
+//         leaveIdLeaveType,
+//         leaveIdDays,
+//         txn,
+//       );
+//     });
+//   }
+
+//   return await sqlHelper.transact(async (txn) => {
+//     for (const year of checkYearAttributed) {
+//       const yearAttributed = year.year;
+//       const daysOfLeave = year.daysOfLeave;
+
+//       const moduleCheck = hrModule || oneLevel ? true : false;
+
+//       const insertLeaveLedger = await Leave.insertLeaveLedger(
+//         {
+//           Code: data.iDCode,
+//           Remarks: data.remarks,
+//           LeaveType: data.leaveType,
+//           ITEMTYPE: data.itemType,
+//           ReferenceNo: data.leaveId,
+//           YearEffectivity: data.effectiveYear,
+//           yearAttributed: yearAttributed,
+//           Credit: daysOfLeave,
+//         },
+//         txn,
+//         "TransDate",
+//       );
+
+//       if (!insertLeaveLedger) {
+//         throw new Error("Failed to insert leave ledger.");
+//       }
+
+//       const leaveLedgerId = insertLeaveLedger.recNo;
+//       const leaveLedgerLeaveId = insertLeaveLedger.referenceNo;
+//       // const leaveLedgerUsedLeave = insertLeaveLedger.credit;
+//       const leaveLedgerYearAttributed = insertLeaveLedger.yearAttributed;
+
+//       const updateVacationSickLeave = await Leave.updateLegerIdVSL(
+//         {
+//           ...(moduleCheck && {
+//             approvedByLevel1: hrdAccount,
+//             approvedByLevel1DateTime: new Date(),
+//           }),
+//           UserID: hrdAccount,
+//           "[HEAD APPROVED]": 1,
+//           "[HEAD APPROVE BY]": hrdAccount,
+//           "[HEAD APPROVE DATE]": new Date(),
+//           ledgerId: leaveLedgerId,
+//           USED_LEAVE: leaveIdDays,
+//           Year: leaveLedgerYearAttributed,
+//           status: "Approved",
+//           approvedByLevel2: hrdAccount,
+//           hrReceived: 1,
+//           hrReceiveDate: new Date(),
+//         },
+//         { leaveId: leaveLedgerLeaveId },
+//         txn,
+//         "approvedByLevel2DateTime",
+//       );
+
+//       if (!updateVacationSickLeave) {
+//         throw new Error("Failed to update leave ledger.");
+//       }
+
+//       console.log(updateVacationSickLeave)
+//     }
+//     return true;
+//   });
+// };
+
+const sendEmailNotification = async (data, notificationType) => {
+  try {
+    const {
+      reasonForRejection,
+      reasonForLeave,
+      rejectedByLevel1,
+      rejectedByLevel2,
+      rejectedByLevel1DateTime,
+      rejectedByLevel2DateTime,
+      iDCode,
+      dateLeavedFrom,
+      dateLeavedTo,
+      tIME_FROM,
+      tIME_TO,
+      leaveType,
+    } = data;
+
+    // Get employee details first
+    const [
+      {
+        fullName: employeeName,
+        employeeCode,
+        department,
+        deptCode,
+        position,
+        employeeClassCode,
+        employeeClass,
+      },
+    ] = await Leave.employeeSimpleDetails(String(iDCode));
+
+    // Only send email for approve lwop leaves if employeeClassCode is 'FA'
+    if (notificationType === "approveLwopFA" && employeeClassCode !== "FA") {
+      return; // Don't send email
+    }
+
+    // Format dates and times
+    const formattedTimeFrom = util.formatDate({
+      date: tIME_FROM,
+      timeOnly: true,
+    });
+
+    const formattedTimeTo = util.formatDate({
+      date: tIME_TO,
+      timeOnly: true,
+    });
+
+    const formattedDateFrom = util.formatDate({
+      date: dateLeavedFrom,
+      straightDate: true,
+    });
+    const formattedDateTo = util.formatDate({
+      date: dateLeavedTo,
+      straightDate: true,
+    });
+
+    const formattedData = {
+      leaveType: leaveType,
+      employeeName: employeeName,
+      employeeCode: employeeCode,
+      employeeClassCode: `${employeeClass} - (${employeeClassCode})`,
+      employeeDepartment: `${department} - (${deptCode})`,
+      employeePositioN: position,
+      formattedTimeOfLeave: `${formattedTimeFrom} - ${formattedTimeTo}`,
+      formattedDateOfLeave: `${formattedDateFrom} - ${formattedDateTo}`,
+      notificationType: notificationType,
+    };
+
+    // Add rejection-specific data if it's a rejection notification
+    if (notificationType === "rejected") {
+      const formattedRejectedDateTime = util.formatDate({
+        date: rejectedByLevel1DateTime || rejectedByLevel2DateTime,
+      });
+
+      const rejectedByCode = String(rejectedByLevel2 || rejectedByLevel1);
+
+      const [
+        {
+          fullName: approverName,
+          employeeCode: approverCode,
+          department: approverDepartment,
+          deptCode: approverDeptCode,
+          position: approverPosition,
+          employeeClassCode: approverEmpClassCode,
+          employeeClass: approverEmpClass,
+        },
+      ] = await Leave.employeeSimpleDetails(rejectedByCode);
+
+      formattedData.rejectedReason = reasonForRejection;
+      formattedData.rejectedByCode = approverCode;
+      formattedData.rejectedByName = approverName;
+      formattedData.rejectedByEmpClassCode = `${approverEmpClass} - (${approverEmpClassCode})`;
+      formattedData.rejectedByPosition = approverPosition;
+      formattedData.rejectedByDepartment = `${approverDepartment} - (${approverDeptCode})`;
+      formattedData.formattedRejectedDateTime =
+        formattedRejectedDateTime.trim();
+    } else if (notificationType === "approveLwopFA") {
+      formattedData.reasonForLeave = reasonForLeave;
+    }
+
+    await leaveUtil.sendEmailForLeave(formattedData, notificationType);
+  } catch (error) {
+    console.error("Error in sendEmailNotification:", error);
+  }
+};
+
 const processHrdRequest = async (data, hrdAccount, hrModule, oneLevel) => {
   const currentYear = new Date().getFullYear();
   const leaveIdDays = data.daysOfLeave;
@@ -543,11 +735,12 @@ const processHrdRequest = async (data, hrdAccount, hrModule, oneLevel) => {
     });
   }
 
-  return await sqlHelper.transact(async (txn) => {
+  const transactionResult = await sqlHelper.transact(async (txn) => {
+    let lastUpdateResult = null;
+
     for (const year of checkYearAttributed) {
       const yearAttributed = year.year;
       const daysOfLeave = year.daysOfLeave;
-
       const moduleCheck = hrModule || oneLevel ? true : false;
 
       const insertLeaveLedger = await Leave.insertLeaveLedger(
@@ -571,7 +764,6 @@ const processHrdRequest = async (data, hrdAccount, hrModule, oneLevel) => {
 
       const leaveLedgerId = insertLeaveLedger.recNo;
       const leaveLedgerLeaveId = insertLeaveLedger.referenceNo;
-      // const leaveLedgerUsedLeave = insertLeaveLedger.credit;
       const leaveLedgerYearAttributed = insertLeaveLedger.yearAttributed;
 
       const updateVacationSickLeave = await Leave.updateLegerIdVSL(
@@ -600,9 +792,22 @@ const processHrdRequest = async (data, hrdAccount, hrModule, oneLevel) => {
       if (!updateVacationSickLeave) {
         throw new Error("Failed to update leave ledger.");
       }
+
+      lastUpdateResult = updateVacationSickLeave;
     }
-    return true;
+
+    return lastUpdateResult;
   });
+
+  if (!transactionResult) {
+    throw new Error("Failed to update leave ledger.");
+  }
+
+  if (transactionResult && leaveIdLeaveType === "LWOP") {
+    await sendEmailNotification(transactionResult, "approveLwopFA");
+  }
+
+  return true;
 };
 
 const createLeaveRequest = async (req, res) => {
@@ -750,9 +955,14 @@ const createLeaveRequest = async (req, res) => {
           });
         }
       }
+
+      // if (LeaveType === "LWOP") {
+      //   await sendEmailNotification(success, "filed");
+      // }
     }
     if (fractionalDays > 0) {
       const success = await createLeave(DateTo, DateTo, fractionalDays, true);
+
       if (!success) {
         return res.status(500).json({
           error: "Failed to insert leave request for fractional day.",
@@ -767,6 +977,10 @@ const createLeaveRequest = async (req, res) => {
           });
         }
       }
+
+      // if (LeaveType === "LWOP") {
+      //   await sendEmailNotification(success, "filed");
+      // }
     }
 
     return res
@@ -831,80 +1045,6 @@ const updateLeaveAction = async (req, res) => {
                   true,
                 );
 
-                // const currentYear = new Date().getFullYear();
-                // const leaveIdDays = leaveDetails[0].daysOfLeave;
-                // const leaveIdLeaveType = leaveDetails[0].leaveType;
-                // const leaveIdCode = leaveDetails[0].iDCode;
-                // const leaveIdYear = leaveDetails[0].year || currentYear;
-                // let checkYearAttributed = [
-                //   { year: `${leaveIdYear}`, daysOfLeave: leaveIdDays },
-                // ];
-
-                // if (leaveIdLeaveType !== "LWOP") {
-                //   checkYearAttributed = await Leave.getAttributedYear(
-                //     leaveIdCode,
-                //     leaveIdLeaveType,
-                //     leaveIdDays,
-                //     txn,
-                //   );
-                // }
-
-                // checkYearAttributed.sort((a, b) => a.year - b.year);
-
-                // for (const year of checkYearAttributed) {
-                //   const yearAttributed = year.year;
-                //   const daysOfLeave = year.daysOfLeave;
-
-                //   const codeReq = leaveDetails[0].iDCode;
-                //   const leaveTypeReq = leaveDetails[0].leaveType;
-                //   const itemType = leaveDetails[0].itemType;
-                //   const yearEffectivity = leaveDetails[0].effectiveYear;
-                //   const remarks = leaveDetails[0].remarks;
-                //   const referenceNo = leaveDetails[0].leaveId;
-
-                //   const insertLeaveLedger = await Leave.insertLeaveLedger(
-                //     {
-                //       Code: codeReq,
-                //       Remarks: remarks,
-                //       LeaveType: leaveTypeReq,
-                //       ITEMTYPE: itemType,
-                //       ReferenceNo: referenceNo,
-                //       YearEffectivity: yearEffectivity,
-                //       yearAttributed: yearAttributed,
-                //       Credit: daysOfLeave,
-                //     },
-                //     txn,
-                //     "TransDate",
-                //   );
-
-                //   const leaveLedgerId = insertLeaveLedger.recNo;
-                //   const leaveLedgerLeaveId = insertLeaveLedger.referenceNo;
-                //   const leaveLedgerUsedLeave = insertLeaveLedger.credit;
-                //   const leaveLedgerYearAttributed =
-                //     insertLeaveLedger.yearAttributed;
-
-                //   const updateVacationSickLeave = await Leave.updateLegerIdVSL(
-                //     {
-                //       status: "Approved",
-                //       approvedByLevel1: employeeID,
-                //       approvedByLevel1DateTime: currentDate,
-                //       UserID: employeeID,
-                //       "[HEAD APPROVED]": 1,
-                //       "[HEAD APPROVE BY]": employeeID,
-                //       "[HEAD APPROVE DATE]": currentDate,
-                //       approvedByLevel2: employeeID,
-                //       ledgerId: leaveLedgerId,
-                //       USED_LEAVE: leaveLedgerUsedLeave,
-                //       Year: leaveLedgerYearAttributed,
-                //       hrReceived: 1,
-                //       hrReceiveDate: currentDate,
-                //     },
-                //     { leaveId: leaveLedgerLeaveId },
-                //     txn,
-                //     "approvedByLevel2DateTime",
-                //   );
-                //   resultsArray.push(updateVacationSickLeave);
-                // }
                 return resultsArray;
               } else {
                 return await Leave.updateLeaveAction(
@@ -921,21 +1061,38 @@ const updateLeaveAction = async (req, res) => {
                   "approvedByLevel1DateTime",
                 );
               }
-            }
+            } else {
+              const updateResult = await Leave.updateLeaveAction(
+                {
+                  status: "RejectedByLevel1",
+                  rejectedByLevel1: employeeID,
+                  UserID: employeeID,
+                  reasonForRejection: reason,
+                  hrReceived: 1,
+                  hrReceiveDate: currentDate,
+                },
+                { leaveId: leaveId },
+                txn,
+                "rejectedByLevel1DateTime",
+              );
 
-            return await Leave.updateLeaveAction(
-              {
-                status: "RejectedByLevel1",
-                rejectedByLevel1: employeeID,
-                UserID: employeeID,
-                reasonForRejection: reason,
-                hrReceived: 1,
-                hrReceiveDate: currentDate,
-              },
-              { leaveId: leaveId },
-              txn,
-              "rejectedByLevel1DateTime",
-            );
+              await sendEmailNotification(updateResult, "rejected");
+              return updateResult;
+
+              // return await Leave.updateLeaveAction(
+              //   {
+              //     status: "RejectedByLevel1",
+              //     rejectedByLevel1: employeeID,
+              //     UserID: employeeID,
+              //     reasonForRejection: reason,
+              //     hrReceived: 1,
+              //     hrReceiveDate: currentDate,
+              //   },
+              //   { leaveId: leaveId },
+              //   txn,
+              //   "rejectedByLevel1DateTime",
+              // );
+            }
           });
 
           if (rowsAffected.error) {
@@ -970,190 +1127,18 @@ const updateLeaveAction = async (req, res) => {
             if (Status === "Approved") {
               let resultsArray = null;
               const leaveDetails = await Leave.getLeaveIdDetails(leaveId, txn);
-              // const currentYear = new Date().getFullYear();
-              // const leaveIdDays = leaveDetails[0].daysOfLeave;
-              // const leaveIdLeaveType = leaveDetails[0].leaveType;
-              // const leaveIdCode = leaveDetails[0].iDCode;
-              // const leaveIdYear = leaveDetails[0].year || currentYear;
-              // let checkYearAttributed = [
-              //   { year: `${leaveIdYear}`, daysOfLeave: leaveIdDays },
-              // ];
-
-              // if (leaveIdLeaveType !== "LWOP") {
-              //   checkYearAttributed = await Leave.getAttributedYear(
-              //     leaveIdCode,
-              //     leaveIdLeaveType,
-              //     leaveIdDays,
-              //     txn,
-              //   );
-              // }
-
-              // checkYearAttributed.sort((a, b) => a.year - b.year);
 
               resultsArray = await processHrdRequest(
                 leaveDetails[0],
                 employeeID,
               );
               return resultsArray;
-              // if (
-              //   !checkLevelStatus.some((level) => level.lvl === 1) &&
-              //   checkStatus.approvedByLevel1 === 0
-              // ) {
-              //   resultsArray = await processHrdRequest(
-              //     leaveDetails[0],
-              //     employeeID,
-              //   );
-              //   // for (const year of checkYearAttributed) {
-              //   //   const yearAttributed = year.year;
-              //   //   const daysOfLeave = year.daysOfLeave;
-
-              //   //   const codeReq = leaveDetails[0].iDCode;
-              //   //   const leaveTypeReq = leaveDetails[0].leaveType;
-              //   //   const itemType = leaveDetails[0].itemType;
-              //   //   const yearEffectivity = leaveDetails[0].effectiveYear;
-              //   //   const remarks = leaveDetails[0].remarks;
-              //   //   const referenceNo = leaveDetails[0].leaveId;
-
-              //   //   const insertLeaveLedger = await Leave.insertLeaveLedger(
-              //   //     {
-              //   //       Code: codeReq,
-              //   //       Remarks: remarks,
-              //   //       LeaveType: leaveTypeReq,
-              //   //       ITEMTYPE: itemType,
-              //   //       ReferenceNo: referenceNo,
-              //   //       YearEffectivity: yearEffectivity,
-              //   //       yearAttributed: yearAttributed,
-              //   //       Credit: daysOfLeave,
-              //   //     },
-              //   //     txn,
-              //   //     "TransDate",
-              //   //   );
-
-              //   //   const leaveLedgerId = insertLeaveLedger.recNo;
-              //   //   const leaveLedgerLeaveId = insertLeaveLedger.referenceNo;
-              //   //   const leaveLedgerUsedLeave = insertLeaveLedger.credit;
-              //   //   const leaveLedgerYearAttributed =
-              //   //     insertLeaveLedger.yearAttributed;
-
-              //   //   const updateVacationSickLeave = await Leave.updateLegerIdVSL(
-              //   //     {
-              //   //       status: "Approved",
-              //   //       approvedByLevel1: employeeID,
-              //   //       approvedByLevel1DateTime: currentDate,
-              //   //       UserID: employeeID,
-              //   //       "[HEAD APPROVED]": 1,
-              //   //       "[HEAD APPROVE BY]": employeeID,
-              //   //       "[HEAD APPROVE DATE]": currentDate,
-              //   //       approvedByLevel2: employeeID,
-              //   //       ledgerId: leaveLedgerId,
-              //   //       USED_LEAVE: leaveLedgerUsedLeave,
-              //   //       Year: leaveLedgerYearAttributed,
-              //   //       hrReceived: 1,
-              //   //       hrReceiveDate: currentDate,
-              //   //     },
-              //   //     { leaveId: leaveLedgerLeaveId },
-              //   //     txn,
-              //   //     "approvedByLevel2DateTime",
-              //   //   );
-
-              //   //   resultsArray.push(updateVacationSickLeave);
-              //   // }
-              //   return resultsArray;
-              // } else {
-              //   resultsArray = await processHrdRequest(
-              //     leaveDetails[0],
-              //     employeeID,
-              //   );
-              //   return resultsArray;
-              //   // const resultsArray = [];
-              //   // const leaveDetails = await Leave.getLeaveIdDetails(
-              //   //   leaveId,
-              //   //   txn,
-              //   // );
-              //   // const currentYear = new Date().getFullYear();
-              //   // const leaveIdDays = leaveDetails[0].daysOfLeave;
-              //   // const leaveIdLeaveType = leaveDetails[0].leaveType;
-              //   // const leaveIdCode = leaveDetails[0].iDCode;
-              //   // const leaveIdYear = leaveDetails[0].year || currentYear;
-
-              //   // resultsArray = await processHrdRequest(leaveDetails, employeeID);
-              //   // // let checkYearAttributed = await Leave.getAttributedYear(
-              //   // //   leaveIdCode,
-              //   // //   leaveIdLeaveType,
-              //   // //   leaveIdDays,
-              //   // //   txn
-              //   // // );
-              //   // let checkYearAttributed = [
-              //   //   { year: `${leaveIdYear}`, daysOfLeave: leaveIdDays },
-              //   // ];
-
-              //   // if (leaveIdLeaveType !== "LWOP") {
-              //   //   checkYearAttributed = await Leave.getAttributedYear(
-              //   //     leaveIdCode,
-              //   //     leaveIdLeaveType,
-              //   //     leaveIdDays,
-              //   //     txn,
-              //   //   );
-              //   // }
-
-              //   // checkYearAttributed.sort((a, b) => a.year - b.year);
-
-              //   // for (const year of checkYearAttributed) {
-              //   //   const yearAttributed = year.year;
-              //   //   const daysOfLeave = year.daysOfLeave;
-
-              //   //   const codeReq = leaveDetails[0].iDCode;
-              //   //   const leaveTypeReq = leaveDetails[0].leaveType;
-              //   //   const itemType = leaveDetails[0].itemType;
-              //   //   const yearEffectivity = leaveDetails[0].effectiveYear;
-              //   //   const remarks = leaveDetails[0].remarks;
-              //   //   const referenceNo = leaveDetails[0].leaveId;
-
-              //   //   const insertLeaveLedger = await Leave.insertLeaveLedger(
-              //   //     {
-              //   //       Code: codeReq,
-              //   //       Remarks: remarks,
-              //   //       LeaveType: leaveTypeReq,
-              //   //       ITEMTYPE: itemType,
-              //   //       ReferenceNo: referenceNo,
-              //   //       YearEffectivity: yearEffectivity,
-              //   //       yearAttributed: yearAttributed,
-              //   //       Credit: daysOfLeave,
-              //   //     },
-              //   //     txn,
-              //   //     "TransDate",
-              //   //   );
-
-              //   //   const leaveLedgerId = insertLeaveLedger.recNo;
-              //   //   const leaveLedgerLeaveId = insertLeaveLedger.referenceNo;
-              //   //   const leaveLedgerUsedLeave = insertLeaveLedger.credit;
-              //   //   const leaveLedgerYearAttributed =
-              //   //     insertLeaveLedger.yearAttributed;
-
-              //   //   const updateVacationSickLeave = await Leave.updateLegerIdVSL(
-              //   //     {
-              //   //       status: "Approved",
-              //   //       UserID: employeeID,
-              //   //       approvedByLevel2: employeeID,
-              //   //       ledgerId: leaveLedgerId,
-              //   //       USED_LEAVE: leaveLedgerUsedLeave,
-              //   //       Year: leaveLedgerYearAttributed,
-              //   //       hrReceived: 1,
-              //   //       hrReceiveDate: currentDate,
-              //   //     },
-              //   //     { leaveId: leaveLedgerLeaveId },
-              //   //     txn,
-              //   //     "approvedByLevel2DateTime",
-              //   //   );
-              //   //   resultsArray.push(updateVacationSickLeave);
-              //   // }
-              // }
             } else {
               if (
                 !checkLevelStatus.some((level) => level.lvl === 1) &&
                 checkStatus.approvedByLevel1 === 0
               ) {
-                return await Leave.updateLeaveAction(
+                const updateResult = await Leave.updateLeaveAction(
                   {
                     status: "RejectedByLevel2",
                     rejectedByLevel1: employeeID,
@@ -1166,8 +1151,24 @@ const updateLeaveAction = async (req, res) => {
                   txn,
                   "rejectedByLevel2DateTime",
                 );
+
+                await sendEmailNotification(updateResult, "rejected");
+                return updateResult;
+                // return await Leave.updateLeaveAction(
+                //   {
+                //     status: "RejectedByLevel2",
+                //     rejectedByLevel1: employeeID,
+                //     rejectedByLevel1DateTime: currentDate,
+                //     rejectedByLevel2: employeeID,
+                //     UserID: employeeID,
+                //     reasonForRejection: reason,
+                //   },
+                //   { leaveId: leaveId },
+                //   txn,
+                //   "rejectedByLevel2DateTime",
+                // );
               } else {
-                return await Leave.updateLeaveAction(
+                const updateResult = await Leave.updateLeaveAction(
                   {
                     status: "RejectedByLevel2",
                     rejectedByLevel2: employeeID,
@@ -1178,6 +1179,19 @@ const updateLeaveAction = async (req, res) => {
                   txn,
                   "rejectedByLevel2DateTime",
                 );
+                await sendEmailNotification(updateResult, "rejected");
+                return updateResult;
+                // return await Leave.updateLeaveAction(
+                //   {
+                //     status: "RejectedByLevel2",
+                //     rejectedByLevel2: employeeID,
+                //     UserID: employeeID,
+                //     reasonForRejection: reason,
+                //   },
+                //   { leaveId: leaveId },
+                //   txn,
+                //   "rejectedByLevel2DateTime",
+                // );
               }
             }
           });
@@ -2035,7 +2049,6 @@ const cancelPending = async (req, res) => {
 
     const checkEmployeeToApprove =
       await Leave.checkEmployeeToApprove(employeeId);
-
     const lvl1DeptCodes = [];
     const lvl2DeptCodes = [];
     const userHasLevel1 = checkEmployeeToApprove.some(

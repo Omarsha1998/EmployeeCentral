@@ -18,8 +18,11 @@ export default {
     dutyRosterCreate: false,
     dutyRosterView: false,
     employeeLeaveDetailsAccess: false,
+    employeeDtrDetailsAccess: false,
     approverDetails: false,
     eventAccess: false,
     unpaidOvertime: false,
+    dtrFinalization: false,
   },
+  policyRule: false,
 };

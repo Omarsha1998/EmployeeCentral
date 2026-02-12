@@ -56,7 +56,6 @@ const { validateAccessToken } = require("../../../helpers/crypto.js");
 //     client.write(`data: ${JSON.stringify({ message })}\n\n`);
 //   });
 // };
-
 router.post("/insertBase64", doctorsController.insertImageBase64);
 router.get("/services", doctorsController.getServices);
 router.get("/wellness", doctorsController.getWellness);
@@ -87,6 +86,18 @@ router.get(
   doctorsController.doctorSecretaries,
 );
 
+router.post(
+  "/resetSecretaryPassword",
+  validateAccessToken,
+  doctorsController.resetSecretaryPassword,
+);
+
+router.post(
+  "/removeSecretary",
+  validateAccessToken,
+  doctorsController.removeSecretary,
+);
+
 // router.post(
 //   "/updateDoctorStatus",
 //   validateAccessToken,
@@ -109,6 +120,13 @@ router.post(
   validateAccessToken,
   doctorsController.removeDoctorInSecretary,
 );
+
+// router.post(
+//   "/addDoctorAssignment",
+//   validateAccessToken,
+//   doctorsController.addDoctorAssignment,
+// );
+
 router.post(
   "/addDoctorAssignment",
   validateAccessToken,
@@ -143,5 +161,5 @@ router.post("/logout", userController.logout);
 // router.get("/picture", doctorsController.getPicture);
 // scheduleDailyTask(15, 7, doctorsController.doctorScript);
 // scheduleDailyTask(14, 11, doctorsController.sendSmsSecretaryDetails);
-
+// doctorsController.insertImageBase64();
 module.exports = router;

@@ -1,8 +1,15 @@
 <template>
-  <q-input
+  <!-- <q-input
     v-if="employeeModule === false"
     class="blue-outline q-mb-sm"
-    style="font-size: 15px"
+    style="
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: white;
+      padding: 15px;
+      padding-bottom: 8px;
+    "
     v-model="searchTextDetails"
     label="Search"
     label-color="primary"
@@ -10,8 +17,257 @@
     clearable
     :class="[$q.screen.name + '-text2']"
     @clear="clearSearchText"
-  />
-  <q-virtual-scroll
+  /> -->
+
+  <q-card
+    v-for="item in computedDTRDetails"
+    :key="item.code"
+    :class="{ 'q-mb-xl': !employeeModule }"
+    style="max-height: 650px"
+  >
+    <q-card-section v-if="!employeeModule" class="bg-primary text-white">
+      <div class="text-subtitle2 text-bold">
+        {{ item.name }} - ({{ item.code }})
+      </div>
+    </q-card-section>
+
+    <q-card-section class="q-card-section q-pa-none flex-grow overflow-auto">
+      <q-table
+        :rows="item.records"
+        :columns="dynamicDtrColumns"
+        row-key="code"
+        virtual-scroll
+        class="custom-scroll"
+        hide-pagination
+        :rows-per-page-options="[0]"
+      >
+        <template v-slot:header>
+          <q-tr class="sticky-thead">
+            <q-th
+              v-for="col in dynamicDtrColumns"
+              :key="col.name"
+              class="text-bold text-center"
+              :style="{ width: col.width || 'auto' }"
+            >
+              {{ col.label }}
+            </q-th>
+          </q-tr>
+        </template>
+        <template v-slot:body="props">
+          <q-tr
+            :key="props.row.Day"
+            :class="{
+              'bg-green-1':
+                (props.row.calendar !== 'ABSENT' &&
+                  props.row.calendar !== null) ||
+                props.row.onLeave === true,
+              'bg-red-1':
+                props.row.iN === null || props.row.calendar === 'ABSENT',
+            }"
+            class="text-center"
+          >
+            <q-td
+              v-for="col in dynamicDtrColumns"
+              :key="col.Day"
+              :style="{ width: col.width || 'auto' }"
+              class="text-center text-subtitle1"
+            >
+              <template v-if="col.field === 'iN' && employeeNoDtr === 0">
+                <q-card
+                  v-if="props.row.late > 1 && props.row.late <= 15"
+                  style="width: 100%"
+                >
+                  <q-card-section
+                    class="text-white text-bold text-center bg-yellow-10"
+                    style="line-height: 25%"
+                  >
+                    {{ props.row[col.field] }}
+                  </q-card-section>
+                </q-card>
+
+                <q-card v-else-if="props.row.late > 15" style="width: 100%">
+                  <q-card-section
+                    class="text-white text-bold text-center bg-red-10"
+                    style="line-height: 25%"
+                  >
+                    {{ props.row[col.field] }}
+                  </q-card-section>
+                </q-card>
+
+                <q-card v-else-if="props.row.iN !== null" style="width: 100%">
+                  <q-card-section
+                    class="text-white text-bold text-center bg-green-8"
+                    style="line-height: 25%"
+                  >
+                    {{ props.row[col.field] }}
+                  </q-card-section>
+                </q-card>
+
+                <div v-else>-</div>
+              </template>
+
+              <template
+                v-else-if="
+                  (col.field === 'iN' &&
+                    employeeNoDtr === 1 &&
+                    officer === false) ||
+                  (col.field === 'iN' &&
+                    employeeNoDtr === 0 &&
+                    officer === true) ||
+                  (col.field === 'iN' &&
+                    employeeNoDtr === 1 &&
+                    officer === true)
+                "
+              >
+                <q-card v-if="props.row.iN !== null" style="width: 100%">
+                  <q-card-section
+                    class="text-white text-bold text-center bg-green-8"
+                    style="line-height: 25%"
+                  >
+                    {{ props.row[col.field] }}
+                  </q-card-section>
+                </q-card>
+                <div v-else>-</div>
+              </template>
+
+              <template v-else-if="col.field === 'oUT'">
+                <q-card
+                  v-if="props.row[col.field] !== null"
+                  style="width: 100%"
+                >
+                  <q-card-section
+                    class="text-white text-bold text-center bg-green-8"
+                    style="line-height: 25%"
+                  >
+                    {{ props.row[col.field] }}
+                  </q-card-section>
+                </q-card>
+                <div v-else>-</div>
+              </template>
+
+              <template v-else-if="col.field === 'oT - IN'">
+                <q-card v-if="props.row['oT - IN'] !== null">
+                  <q-card-section
+                    class="text-white text-bold text-center bg-green-8"
+                    style="line-height: 25%"
+                  >
+                    {{ props.row[col.field] }}
+                  </q-card-section>
+                </q-card>
+                <div v-else>-</div>
+              </template>
+
+              <template v-else-if="col.field === 'oT - OUT'">
+                <q-card v-if="props.row['oT - OUT'] !== null">
+                  <q-card-section
+                    class="text-white text-bold text-center bg-green-8"
+                    style="line-height: 25%"
+                  >
+                    {{ props.row[col.field] }}
+                  </q-card-section>
+                </q-card>
+                <div v-else>-</div>
+              </template>
+
+              <template v-else-if="col.field === 'late'">
+                <q-card
+                  v-if="props.row.late > 1 && props.row.late <= 15"
+                  style="width: 100%"
+                >
+                  <q-card-section
+                    class="text-white text-bold text-center bg-yellow-10"
+                    style="line-height: 25%"
+                  >
+                    {{ props.row[col.field] }}
+                  </q-card-section>
+                </q-card>
+
+                <q-card v-else-if="props.row.late > 15" style="width: 100%">
+                  <q-card-section
+                    class="text-white text-bold text-center bg-red-10"
+                    style="line-height: 25%"
+                  >
+                    {{ props.row[col.field] }}
+                  </q-card-section>
+                </q-card>
+
+                <div v-else>-</div>
+              </template>
+
+              <template v-else-if="col.field === 'undertime'">
+                <q-card
+                  v-if="props.row.undertime > 1 && props.row.undertime <= 14"
+                  style="width: 100%"
+                >
+                  <q-card-section
+                    class="text-white text-bold text-center bg-yellow-10"
+                    style="line-height: 25%"
+                  >
+                    {{ props.row[col.field] }}
+                  </q-card-section>
+                </q-card>
+
+                <q-card
+                  v-else-if="props.row.undertime > 14"
+                  style="width: 100%"
+                >
+                  <q-card-section
+                    class="text-white text-bold text-center bg-red-10"
+                    style="line-height: 25%"
+                  >
+                    {{ props.row[col.field] }}
+                  </q-card-section>
+                </q-card>
+
+                <div v-else>-</div>
+              </template>
+
+              <template v-else-if="col.field === 'otHours'">
+                <q-card v-if="props.row.otHours > 1" style="width: 100%">
+                  <q-card-section
+                    class="text-white text-bold text-center bg-green-8"
+                    style="line-height: 25%"
+                  >
+                    {{ props.row[col.field] }}
+                  </q-card-section>
+                </q-card>
+                <div v-else>-</div>
+              </template>
+
+              <template v-else-if="col.field === 'holidayPay'">
+                <q-card v-if="props.row.holidayPay > 1" style="width: 100%">
+                  <q-card-section
+                    class="text-white text-bold text-center bg-green-8"
+                    style="line-height: 25%"
+                  >
+                    {{ props.row[col.field] }}
+                  </q-card-section>
+                </q-card>
+                <div v-else>-</div>
+              </template>
+
+              <template v-else-if="col.field === 'workHours'">
+                <q-card v-if="props.row.workHours !== '-'">
+                  <q-card-section
+                    class="text-white text-bold text-center bg-green-8"
+                    style="line-height: 25%"
+                  >
+                    {{ props.row[col.field] }}
+                  </q-card-section>
+                </q-card>
+                <div v-else>-</div>
+              </template>
+
+              <template v-else>
+                {{ props.row[col.field] }}
+              </template>
+            </q-td>
+          </q-tr>
+        </template>
+      </q-table>
+    </q-card-section>
+  </q-card>
+  <!-- <q-virtual-scroll
     type="table"
     style="max-height: 700px"
     :virtual-scroll-item-size="48"
@@ -209,7 +465,7 @@
         </q-td>
       </q-tr>
     </template>
-  </q-virtual-scroll>
+  </q-virtual-scroll> -->
 
   <div
     v-if="DTRDetails.length > 0 && this.employeeModule === true"
@@ -243,6 +499,7 @@
 <script>
 import { mapGetters } from "vuex";
 import dtrPdf from "../components/DTRReportPdf.vue";
+import employeeModule from "src/store/modules/employeeModule";
 
 export default {
   props: {
@@ -434,15 +691,120 @@ export default {
       return columns;
     },
 
+    // computedDTRDetails() {
+    //   const dtrArray = this.DTRDetails;
+    //   const query = this.searchTextDetails
+    //     ? this.searchTextDetails.toLocaleLowerCase()
+    //     : "";
+    //   const filteredDetails = dtrArray.filter((row) => {
+    //     return row.name.toString().toLowerCase().includes(query);
+    //   });
+    //   return filteredDetails.map((row) => {
+    //     const schedule = this.employeeNoDtr ? "-" : row.schedule;
+    //     const checkIn = row.iN
+    //       ? row.iN.split(":").map((num) => parseInt(num, 10))
+    //       : null;
+    //     const checkOut = row.oUT
+    //       ? row.oUT.split(":").map((num) => parseInt(num, 10))
+    //       : null;
+    //     let workHours = "-";
+    //     if (checkIn && checkOut) {
+    //       let checkInDecimal =
+    //         parseInt(checkIn[0], 10) + parseInt(checkIn[1], 10) / 60;
+    //       let checkOutDecimal =
+    //         parseInt(checkOut[0], 10) + parseInt(checkOut[1], 10) / 60;
+    //       if (checkOutDecimal < checkInDecimal) {
+    //         checkOutDecimal += 24;
+    //       }
+
+    //       let totalHours = checkOutDecimal - checkInDecimal;
+
+    //       const [startTimeStr, endTimeStr] = row.schedule.split(" - ");
+    //       const startTime = new Date("1970-01-01T" + startTimeStr + "Z");
+    //       const endTime = new Date("1970-01-01T" + endTimeStr + "Z");
+    //       let timeDifferenceMs = endTime - startTime;
+    //       let timeDifferenceHours = timeDifferenceMs / (1000 * 60 * 60);
+
+    //       if (totalHours > 0) {
+    //         if (timeDifferenceHours >= 9 && row.isHalfDay === false) {
+    //           totalHours -= 1;
+    //         } else {
+    //           totalHours;
+    //         }
+    //         workHours = totalHours > 0 ? totalHours.toFixed(2) : "-";
+    //       } else {
+    //         workHours = "-";
+    //       }
+    //     } else {
+    //       const [startTimeStr, endTimeStr] = row.schedule.split(" - ");
+    //       const startTime = new Date("1970-01-01T" + startTimeStr + "Z");
+    //       const endTime = new Date("1970-01-01T" + endTimeStr + "Z");
+    //       let timeDifferenceMs = endTime - startTime;
+    //       let timeDifferenceHours = timeDifferenceMs / (1000 * 60 * 60);
+    //       const currentDate = new Date();
+    //       const schedToDate = new Date(row.schedTo);
+    //       if (currentDate < schedToDate) {
+    //         const currentDecimal =
+    //           currentDate.getHours() + currentDate.getMinutes() / 60;
+    //         const checkInDecimal = checkIn ? checkIn[0] + checkIn[1] / 60 : 0;
+    //         let hoursDiff = currentDecimal - checkInDecimal;
+
+    //         if (hoursDiff > 0) {
+    //           if (timeDifferenceHours >= 9 && row.isHalfDay === false) {
+    //             hoursDiff -= 1;
+    //           } else {
+    //             hoursDiff;
+    //           }
+    //           workHours = hoursDiff.toFixed(2);
+    //         } else {
+    //           workHours = hoursDiff.toFixed(2);
+    //         }
+    //       }
+    //     }
+
+    //     return {
+    //       ...row,
+    //       undertime: row.undertime === 0 ? null : row.undertime,
+    //       late: row.late === 0 ? null : row.late,
+    //       otHours: row.otHours === 0 ? null : row.otHours,
+    //       holidayPay: row.holidayPay === 0 ? null : row.holidayPay,
+    //       schedule:
+    //         row.onLeave === true
+    //           ? "ON LEAVE"
+    //           : row.calendar === "REST DAY"
+    //             ? "REST DAY"
+    //             : row.calendar === "DAY OFF"
+    //               ? "DAY OFF"
+    //               : row.calendar &&
+    //                   row.calendar.toUpperCase().includes("HOLIDAY")
+    //                 ? "HOLIDAY"
+    //                 : schedule,
+    //       calendar:
+    //         row.onLeave === true
+    //           ? this.LeaveTypes.find(
+    //               (leave) => leave.value === row.leaveType,
+    //             )?.label.toUpperCase()
+    //           : row.absent === true && new Date(row.transDate) < new Date()
+    //             ? "ABSENT"
+    //             : row.calendar,
+    //       workHours: !row.iN && !row.oUT ? "-" : workHours,
+    //     };
+    //   });
+    // },
+
     computedDTRDetails() {
-      const dtrArray = this.DTRDetails;
+      const dtrArray = this.DTRDetails || [];
       const query = this.searchTextDetails
         ? this.searchTextDetails.toLocaleLowerCase()
         : "";
-      const filteredDetails = dtrArray.filter((row) => {
-        return row.name.toString().toLowerCase().includes(query);
-      });
-      return filteredDetails.map((row) => {
+
+      // Step 1: Filter by search
+      const filteredDetails = dtrArray.filter((row) =>
+        row.name.toString().toLowerCase().includes(query),
+      );
+
+      // Step 2: Map to include calculated fields (workHours, schedule, etc.)
+      const mappedDetails = filteredDetails.map((row) => {
         const schedule = this.employeeNoDtr ? "-" : row.schedule;
         const checkIn = row.iN
           ? row.iN.split(":").map((num) => parseInt(num, 10))
@@ -450,59 +812,27 @@ export default {
         const checkOut = row.oUT
           ? row.oUT.split(":").map((num) => parseInt(num, 10))
           : null;
+
         let workHours = "-";
+
         if (checkIn && checkOut) {
-          let checkInDecimal =
-            parseInt(checkIn[0], 10) + parseInt(checkIn[1], 10) / 60;
-          let checkOutDecimal =
-            parseInt(checkOut[0], 10) + parseInt(checkOut[1], 10) / 60;
-          if (checkOutDecimal < checkInDecimal) {
-            checkOutDecimal += 24;
-          }
+          let checkInDecimal = checkIn[0] + checkIn[1] / 60;
+          let checkOutDecimal = checkOut[0] + checkOut[1] / 60;
+          if (checkOutDecimal < checkInDecimal) checkOutDecimal += 24;
 
           let totalHours = checkOutDecimal - checkInDecimal;
 
           const [startTimeStr, endTimeStr] = row.schedule.split(" - ");
           const startTime = new Date("1970-01-01T" + startTimeStr + "Z");
           const endTime = new Date("1970-01-01T" + endTimeStr + "Z");
-          let timeDifferenceMs = endTime - startTime;
-          let timeDifferenceHours = timeDifferenceMs / (1000 * 60 * 60);
+          let timeDifferenceHours = (endTime - startTime) / (1000 * 60 * 60);
 
           if (totalHours > 0) {
-            if (timeDifferenceHours >= 9 && row.isHalfDay === false) {
-              totalHours -= 1;
-            } else {
-              totalHours;
-            }
+            if (timeDifferenceHours >= 9 && !row.isHalfDay) totalHours -= 1;
             workHours = totalHours > 0 ? totalHours.toFixed(2) : "-";
-          } else {
-            workHours = "-";
-          }
+          } else workHours = "-";
         } else {
-          const [startTimeStr, endTimeStr] = row.schedule.split(" - ");
-          const startTime = new Date("1970-01-01T" + startTimeStr + "Z");
-          const endTime = new Date("1970-01-01T" + endTimeStr + "Z");
-          let timeDifferenceMs = endTime - startTime;
-          let timeDifferenceHours = timeDifferenceMs / (1000 * 60 * 60);
-          const currentDate = new Date();
-          const schedToDate = new Date(row.schedTo);
-          if (currentDate < schedToDate) {
-            const currentDecimal =
-              currentDate.getHours() + currentDate.getMinutes() / 60;
-            const checkInDecimal = checkIn ? checkIn[0] + checkIn[1] / 60 : 0;
-            let hoursDiff = currentDecimal - checkInDecimal;
-
-            if (hoursDiff > 0) {
-              if (timeDifferenceHours >= 9 && row.isHalfDay === false) {
-                hoursDiff -= 1;
-              } else {
-                hoursDiff;
-              }
-              workHours = hoursDiff.toFixed(2);
-            } else {
-              workHours = hoursDiff.toFixed(2);
-            }
-          }
+          workHours = "-";
         }
 
         return {
@@ -515,33 +845,45 @@ export default {
             row.onLeave === true
               ? "ON LEAVE"
               : row.calendar === "REST DAY"
-              ? "REST DAY"
-              : row.calendar === "DAY OFF"
-              ? "DAY OFF"
-              : row.calendar && row.calendar.toUpperCase().includes("HOLIDAY")
-              ? "HOLIDAY"
-              : schedule,
+                ? "REST DAY"
+                : row.calendar === "DAY OFF"
+                  ? "DAY OFF"
+                  : row.calendar &&
+                      row.calendar.toUpperCase().includes("HOLIDAY")
+                    ? "HOLIDAY"
+                    : schedule,
           calendar:
             row.onLeave === true
               ? this.LeaveTypes.find(
                   (leave) => leave.value === row.leaveType,
                 )?.label.toUpperCase()
               : row.absent === true && new Date(row.transDate) < new Date()
-              ? "ABSENT"
-              : row.calendar,
+                ? "ABSENT"
+                : row.calendar,
           workHours: !row.iN && !row.oUT ? "-" : workHours,
         };
       });
+
+      // Step 3: Group by code + name
+      const grouped = {};
+      mappedDetails.forEach((row) => {
+        const key = `${row.code}|${row.name}`;
+        if (!grouped[key])
+          grouped[key] = { code: row.code, name: row.name, records: [] };
+        grouped[key].records.push(row);
+      });
+
+      return Object.values(grouped);
     },
 
     totalWorkHoursMonth() {
-      let totalHours = 0;
-      this.computedDTRDetails.forEach((row) => {
-        if (row.workHours && row.workHours !== "-") {
-          totalHours += parseFloat(row.workHours);
-        }
-      });
-      return totalHours.toFixed(2);
+      return this.computedDTRDetails
+        .flatMap((row) => row?.records ?? [])
+        .reduce((total, record) => {
+          const hours = parseFloat(record.workHours);
+          return total + (isNaN(hours) ? 0 : hours);
+        }, 0)
+        .toFixed(2);
     },
 
     getLeaveTypeLabel(leaveTypeValue) {

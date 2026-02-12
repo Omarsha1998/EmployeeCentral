@@ -404,45 +404,39 @@ export default {
           timeout: 1000,
           progress: true,
         });
-        this.loading = false;
         return;
       }
 
       this.loading = true;
-
       helperMethods.disablePointerEvents();
-      helperMethods.delay(100);
 
-      const data = {
-        fromDate: this.fromDate ? this.fromDate : null,
-        toDate: this.toDate ? this.toDate : null,
-        classCode: this.selectedClass?.class ?? "",
-      };
+      try {
+        const data = {
+          fromDate: this.fromDate,
+          toDate: this.toDate,
+          classCode: this.selectedClass?.class ?? "",
+        };
 
-      const [err, res] = await helperMethods.tryCatchAsync(
-        this.$store.dispatch("overtimeModule/unpaidOvertime", data),
-      );
+        const res = await this.$store.dispatch(
+          "overtimeModule/unpaidOvertime",
+          data,
+        );
 
-      this.loading = false;
-
-      helperMethods.enablePointerEvents();
-
-      if (err) {
+        this.overtimeItems = res;
+      } catch (err) {
         this.$q.notify({
           color: "negative",
           position: "center",
-          message: `${err.response.data.message}`,
+          message: err?.response?.data?.message || "Something went wrong",
           icon: "report_problem",
           iconColor: "white",
           timeout: 1000,
           progress: true,
         });
+      } finally {
         this.loading = false;
         helperMethods.enablePointerEvents();
-        return;
       }
-
-      this.overtimeItems = res;
     },
 
     handleEnterKey(event) {

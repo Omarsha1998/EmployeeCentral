@@ -557,7 +557,7 @@ export default {
                 ot130: row.oT130,
                 ot135: row.oT135,
                 refund: row.refund,
-                note: row.note,
+                note: row.note ?? "",
                 payrollPeriod: this.payrollPeriod,
                 timeDataFrom: this.timeDataFrom,
                 timeDataTo: this.timeDataTo,

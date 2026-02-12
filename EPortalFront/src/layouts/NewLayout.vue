@@ -338,12 +338,12 @@
               </q-item-section>
             </q-item>
 
-            <q-item to="/policy">
+            <q-item v-if="policyRule" to="/policy">
               <q-item-section avatar>
                 <q-icon name="security" />
               </q-item-section>
               <q-item-section class="custom-expansion-item">
-                <q-item-label>Document's and Policies</q-item-label>
+                <q-item-label>Policies & Processes</q-item-label>
               </q-item-section>
               <!-- <q-badge class="q-mr-sm text-bold" color="yellow-10" floating
                 >New</q-badge
@@ -575,6 +575,9 @@ export default defineComponent({
     isPISApprover() {
       return this.$store.getters["user_module/is_pis_approver"];
     },
+    policyRule() {
+      return this.$store.getters["user_module/policyRule"];
+    },
     isLicense() {
       return this.$store.getters["user_module/is_license"];
     },
@@ -590,29 +593,22 @@ export default defineComponent({
 
     DTRLinks() {
       const dtrLinks = this.$store.getters["helpers/DTRLinks"];
+      const dtrFinalization =
+        this.$store.getters["user_module/dtrFinalization"];
+
       const filteredDtrLinks = dtrLinks[0].children;
 
       return filteredDtrLinks.filter((child) => {
         if (
-          !this.employeeLeaveDetailsAccess &&
+          !this.employeeDtrDetailsAccess &&
           child.title === "Employee Search DTR"
         ) {
           return false;
         }
 
-        // if (
-        //   (this.employeeDeptCode !== "5040" || this.employeeID !== "8958") &&
-        //   child.title === "DTR Finalization"
-        // ) {
-        //   return false;
-        // }
-
-        // if (
-        //   this.employeeDeptCode !== "5040" &&
-        //   child.title === "DTR Finalization"
-        // ) {
-        //   return false;
-        // }
+        if (!dtrFinalization && child.title === "DTR Finalization") {
+          return false;
+        }
 
         return true;
       });
@@ -694,6 +690,10 @@ export default defineComponent({
 
     employeeLeaveDetailsAccess() {
       return this.$store.getters["user_module/employeeLeaveDetailsAccess"];
+    },
+
+    employeeDtrDetailsAccess() {
+      return this.$store.getters["user_module/employeeDtrDetailsAccess"];
     },
   },
 

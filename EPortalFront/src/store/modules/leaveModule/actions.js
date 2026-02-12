@@ -309,7 +309,7 @@ export default {
 
   async approveCancelLeaves({ commit }, leaveId) {
     try {
-      const result = await axios.post(
+      await axios.post(
         `${api}${controllerName}/cancel-admin-action`,
         {
           LeaveID: leaveId,

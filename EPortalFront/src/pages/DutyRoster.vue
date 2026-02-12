@@ -677,7 +677,7 @@ export default {
 
   computed: {
     ...mapGetters({
-      deptOptions: "dutyRosterModule/getDepartment",
+      deptOptions: "hierarchyModule/getAllDepartments",
       employeesGetter: "dutyRosterModule/getEmployees",
       employeeDtrGetter: "dutyRosterModule/getEmployeeDtr",
       scheduleGetter: "dutyRosterModule/getSchedule",
@@ -776,7 +776,8 @@ export default {
     async getDepartment() {
       try {
         helperMethods.delay(500);
-        await this.$store.dispatch("dutyRosterModule/getDepartment");
+        // await this.$store.dispatch("dutyRosterModule/getDepartment");
+        await this.$store.dispatch("hierarchyModule/getDepartments");
         this.department = this.deptOptions;
         this.loadingCounter++;
         if (this.loadingCounter === 2) {
@@ -898,8 +899,7 @@ export default {
           dataArray: this.dataCombine,
         };
 
-        console.log(data);
-        // await this.$store.dispatch("dutyRosterModule/changeSchedule", data);
+        await this.$store.dispatch("dutyRosterModule/changeSchedule", data);
         await this.getEmployees(this.selectedDept);
         this.$q.loading.hide();
         this.$q.notify({
@@ -966,10 +966,10 @@ export default {
         };
 
         await this.$store.dispatch("dutyRosterModule/submitNewSchedule", data);
-        (this.timeFrom = null),
+        ((this.timeFrom = null),
           (this.timeTo = null),
           (this.selectedRestDay = null),
-          (this.selectedDayOff = null);
+          (this.selectedDayOff = null));
         this.$q.loading.hide();
         this.$q.notify({
           color: "positive",

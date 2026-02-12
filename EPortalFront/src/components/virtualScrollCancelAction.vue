@@ -406,8 +406,8 @@ export default {
                 ? "these overtime?"
                 : "these leaves?"
               : this.overtimeModule
-              ? "this overtime?"
-              : "this leave?"
+                ? "this overtime?"
+                : "this leave?"
           }`,
           cancel: true,
           persistent: true,
@@ -474,8 +474,8 @@ export default {
                     ? "overtime?"
                     : "leaves"
                   : this.overtimeModule
-                  ? "overtime"
-                  : "leave?"
+                    ? "overtime"
+                    : "leave?"
               }`,
               icon: "check",
               iconColor: "white",
@@ -691,9 +691,18 @@ export default {
     },
   },
 
-  created() {
-    this.displayedItems = this.items.slice(0, this.toDisplay);
+  watch: {
+    items: {
+      handler(v) {
+        this.displayedItems = v.slice(0, this.toDisplay);
+      },
+      immediate: true,
+    },
   },
+
+  // created() {
+  //   this.displayedItems = this.items.slice(0, this.toDisplay);
+  // },
 };
 </script>
 

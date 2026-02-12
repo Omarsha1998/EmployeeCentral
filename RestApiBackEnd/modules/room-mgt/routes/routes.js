@@ -3,7 +3,7 @@ const appController = require("../controllers/appController.js");
 const schedController = require("../controllers/schedController.js");
 const userController = require("../controllers/usercontroller.js");
 const { validateAccessToken } = require("../../../helpers/crypto.js");
-const { scheduleDailyTask } = require("../utility/helpers.js");
+// const { scheduleDailyTask } = require("../utility/helpers.js");
 
 const router = Router();
 
@@ -70,6 +70,8 @@ router.get(
   validateAccessToken,
   schedController.bookedRoomsView,
 );
+
+// schedController.trialReport();
 
 // router.post("/checkStatus", schedController.checkStatus);
 

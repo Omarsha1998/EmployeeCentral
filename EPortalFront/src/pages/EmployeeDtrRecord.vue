@@ -47,7 +47,7 @@
                       outlined
                       :options="departments"
                       option-label="deptDescription"
-                      option-value="code"
+                      option-value="deptCode"
                       @filter="filterFn"
                       behavior="menu"
                       fill-input
@@ -182,14 +182,35 @@
                     fontSize: $q.screen.lt.sm
                       ? '16px'
                       : $q.screen.lt.md
-                      ? '18px'
-                      : $q.screen.gt.md && $q.screen.lt.xl
-                      ? '20px'
-                      : '24px',
+                        ? '18px'
+                        : $q.screen.gt.md && $q.screen.lt.xl
+                          ? '20px'
+                          : '24px',
                   }"
                 >
                   <div class="text-center">Daily Time Record</div>
                 </q-card-section>
+
+                <q-card-section
+                  class="q-pa-md"
+                  style="
+                    position: sticky;
+                    top: 0;
+                    z-index: 1;
+                    background: white;
+                  "
+                >
+                  <q-input
+                    v-if="dtrDetails.length > 0"
+                    class="blue-outline"
+                    v-model="searchTextDetails"
+                    label="Search"
+                    outlined
+                    clearable
+                    @clear="clearSearchText"
+                  />
+                </q-card-section>
+
                 <q-card-section>
                   <div
                     v-if="dtrDetails.length === 0"
@@ -202,7 +223,7 @@
                     v-else
                     :employeeModule="false"
                     :employeeNoDtr="0"
-                    :DTRDetails="dtrDetails"
+                    :DTRDetails="filteredDtrDetails"
                   />
                 </q-card-section>
               </q-card>
@@ -232,6 +253,7 @@ export default {
       classOption: null,
       loading: true,
       loadingSkeleton: null,
+      searchTextDetails: "",
     };
   },
   components: {
@@ -240,12 +262,27 @@ export default {
 
   computed: {
     ...mapGetters({
+      employeeCode: "user_module/employee_id",
+      deptCode: "user_module/employeeDeptCode",
       allDepartmentsGetter: "hierarchyModule/getAllDepartments",
       classGetter: "employeeModule/getClass",
       dtrDetails: "DTRModule/getdtrdetails",
     }),
+
+    filteredDtrDetails() {
+      if (!this.searchTextDetails) return this.dtrDetails;
+
+      const query = this.searchTextDetails.toLowerCase();
+      return this.dtrDetails.filter((row) =>
+        row.name.toString().toLowerCase().includes(query),
+      );
+    },
   },
   methods: {
+    clearSearchText() {
+      this.searchTextDetails = "";
+    },
+
     filterFn(val, update) {
       if (val === "") {
         update(() => {
@@ -275,8 +312,12 @@ export default {
 
     async getDepartment() {
       try {
+        const data = {
+          employeeCode: this.employeeCode,
+          deptCode: this.deptCode,
+        };
         await helperMethods.delay(500);
-        await this.$store.dispatch("hierarchyModule/getDepartments");
+        await this.$store.dispatch("hierarchyModule/getDepartments", data);
         this.loadingSkeleton++;
         if (this.loadingSkeleton === 2) {
           this.loading = false;
@@ -340,22 +381,55 @@ export default {
       try {
         await helperMethods.delay(500);
         helperMethods.disablePointerEvents();
+
         const data = {
           employeeCode: this.inputtedEmpCode ? this.inputtedEmpCode : "",
           department: this.selectedDepartment
-            ? this.selectedDepartment.code
+            ? this.selectedDepartment.deptCode
             : "",
           selectedClass: this.selectedClass ? this.selectedClass.class : "",
           dateFrom: this.dateFrom ? this.formateDate(this.dateFrom) : "",
           dateTo: this.dateTo ? this.formateDate(this.dateTo) : "",
         };
+
+        if (this.inputtedEmpCode) {
+          const ownershipData = {
+            employeeCode: this.inputtedEmpCode,
+            approverCode: this.employeeCode,
+          };
+
+          await this.$store.dispatch("DTRModule/checkOwnership", ownershipData);
+        }
+
         await this.$store.dispatch("DTRModule/fetchDTR", data);
+
         this.$q.loading.hide();
         helperMethods.enablePointerEvents();
       } catch (error) {
         this.$q.loading.hide();
         helperMethods.enablePointerEvents();
+
         console.error(error);
+
+        let errorMessage = "An error occurred while fetching DTR";
+        let errorIcon = "error";
+
+        if (error.isOwnershipError) {
+          errorMessage = error.message;
+          errorIcon = "report_problem";
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+
+        this.$q.notify({
+          color: "negative",
+          position: "center",
+          message: errorMessage,
+          icon: errorIcon,
+          iconColor: "white",
+          timeout: 2000,
+          progress: true,
+        });
       }
     },
 

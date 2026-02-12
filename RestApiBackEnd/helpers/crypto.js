@@ -69,6 +69,7 @@ const validateLogin = async (req, res, next) => {
     user.code ??
     user.employeeId ??
     user.employee_id ??
+    user.EmployeeCode ??
     user.userData?.[0]?.code;
 
   // CHECK IF WHITELISTED
